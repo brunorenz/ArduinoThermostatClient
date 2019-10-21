@@ -140,12 +140,8 @@ unsigned long ThermManager::_wiFiRegister(CONFIG *config)
   unsigned long now = 0;
   postData = "";
   //String postData;
-  //postData.reserve(1000);
-  //DynamicJsonBuffer jsonBuffer(GET_JSON_BUFFER);
+
   DinamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
-  //StaticJsonBuffer<GET_JSON_BUFFER>
-  //jsonBuffer;
-  //JsonObject &root = jsonBuffer.createObject();
   JsonObject root = jsonBuffer.as<JsonObject>();
   char macAddress[50];
   hc->getMacAddress(macAddress);
@@ -160,22 +156,23 @@ unsigned long ThermManager::_wiFiRegister(CONFIG *config)
   root["macAddress"] = macAddress;
   root["ipAddress"] = ipAddress;
   root.printTo(postData);
-  if (hc->httpPostMethod(&client, POST_REGISTER, postData))
+  if (hc->httpPostMethod(&client, POST_REGISTER, jsonBuffer))
   {
     //DynamicJsonBuffer jsonBuffer(GET_JSON_BUFFER);
-    StaticJsonBuffer<GET_JSON_BUFFER> jsonBufferOut;
-    JsonObject &root = jsonBufferOut.parseObject(client);
-    if (!root.success())
+    DinamicJsonDocument jsonBufferOut(GET_JSON_BUFFER);
+    //StaticJsonBuffer<GET_JSON_BUFFER> jsonBufferOut;
+    DeserializationError err = deserializeJson(jsonBufferOut, client);
+    if (err)
     {
-      logger.printlnLog("parseObject() failed");
-    }
-    else
+      logger.printlnLog("parseObject() failed : %s",err.c_str());
+    } else
     {
-      //JsonObject& data = root["data"];
+      
+     //JsonObject& data = root["data"];
       //int d = data["$loki"];
       //logger.printlnLog("KEY %d", d);
       //return analizzaWiFiRegisterResponse(config, &root);
-      if (checkRestError(&root) == REST_RET_OK)
+      if (checkRestError(&jsonBufferOut) == REST_RET_OK)
       {
         //JsonObject& data = root.get<JsonObject>("data");
         JsonObject &data = root["data"];
@@ -208,6 +205,7 @@ unsigned long ThermManager::_wiFiRegister(CONFIG *config)
 */
 void ThermManager::_getCurrentData(TEMPDATA *outdata)
 {
+  /**
   postData = "";
   if (hc->httpGetMethod(&client, GET_CURRENTDATA))
   {
@@ -250,6 +248,7 @@ void ThermManager::_getCurrentData(TEMPDATA *outdata)
       }
     }
   }
+  **/
 }
 
 /**
@@ -257,6 +256,7 @@ void ThermManager::_getCurrentData(TEMPDATA *outdata)
 */
 void ThermManager::_checkUpdate(bool first, CONFIG *conf)
 {
+  /**
   postData = "";
   char GET[100];
   if (checkThermConfiguration(conf))
@@ -361,6 +361,8 @@ void ThermManager::_checkUpdate(bool first, CONFIG *conf)
       }
     }
   }
+
+  **/
 }
 
 /**
@@ -368,6 +370,7 @@ void ThermManager::_checkUpdate(bool first, CONFIG *conf)
 */
 void ThermManager::_sendMonitorData(CONFIG *conf, SENSORDATA *sensorData)
 {
+  /*
   postData = "";
   if (checkThermConfiguration(conf))
   {
@@ -406,4 +409,5 @@ void ThermManager::_sendMonitorData(CONFIG *conf, SENSORDATA *sensorData)
       }
     }
   }
+  */
 }

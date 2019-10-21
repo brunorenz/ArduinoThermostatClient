@@ -147,6 +147,23 @@ bool HomeConnection::httpPostMethod(WiFiClient *client, char *postString, JsonOb
 
 // https://arduinojson.org/v6/doc/serialization/
 
+bool HomeConnection::httpPostMethod(WiFiClient *client, char *postString, DynamicJsonDocument &doc)
+{
+  if (initServerConnection(client))
+  {
+    int len1 = measureJson(doc);
+    sprintf(httpBuffer, "POST %s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n%s\r\n\r\n",
+            postString, TERM_SERVER_URL, TERM_SERVER_PORT, len1, HTTP_HEADPOST);
+    //logger.printlnLog("HTTP CALL : %s(%d)", httpBuffer, strlen(httpBuffer));
+    client->print(httpBuffer);
+    client->println(postData);
+    if (waitServerResponse(client))
+    {
+      return true;
+    }
+  }
+  return false;
+}
 bool HomeConnection::httpPostMethod(WiFiClient *client, char *postString, String &postData)
 {
 

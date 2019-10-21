@@ -25,6 +25,7 @@ public:
   bool waitServerResponse(WiFiClient *client);
   bool httpGetMethod(WiFiClient *client, char *getString);
   bool httpPostMethod(WiFiClient *client, char *postString, String &data);
+  bool httpPostMethod(WiFiClient *client, char *postString, DynamicJsonDocument &doc);
   void setRTC(RTCZero *rtc);
   //bool httpPostMethod(WiFiClient *client, char *postString, JsonObject& root);
 private:
