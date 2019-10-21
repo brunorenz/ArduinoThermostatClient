@@ -2,12 +2,11 @@
   TermClient main module
 */
 
-#include "/home/renzoni/Arduino/TermClient/TermClient.h"
-#include "/home/renzoni//Arduino/TermClient/HomeConnection.h"
-#include "/home/renzoni//Arduino/TermClient/ThermManager.h"
-#include "/home/renzoni//Arduino/TermClient/MemoryFree.h"
-#include "/home/renzoni//Arduino/TermClient/Logging.h"
-
+#include "TermClient.h"
+#include "HomeConnection.h"
+#include "ThermManager.h"
+#include "MemoryFree.h"
+#include "Logging.h"
 
 #include <Wire.h>
 #include <SPI.h>
@@ -20,7 +19,7 @@
 #include <Adafruit_BMP280.h>
 #include <Adafruit_BME280.h>
 
-int status = WL_IDLE_STATUS;     // the WiFi radio's status
+int status = WL_IDLE_STATUS; // the WiFi radio's status
 boolean LCD = false;
 boolean BMP280 = false;
 char temp[250];
@@ -45,30 +44,28 @@ bool checkI2CAddress(int address);
 void readTemperature(boolean init);
 float getManagedTemperature(int pryDisp, CONFIG *conf);
 bool checkConfiguration(CONFIG *conf, bool connectionAvailable);
-bool checkThermostatStatus(float cT, CONFIG * conf, boolean connectionAvailable);
+bool checkThermostatStatus(float cT, CONFIG *conf, boolean connectionAvailable);
 void loopREST();
-
-
-
 
 long timeoutCallMonitor;
 long timeoutReadTemperature;
 long timeoutSetTemperatureRele;
 long timeoutCheckConfiguration;
 CONFIG config;
-SENSORDATA  sensorData;
+SENSORDATA sensorData;
 
 const int sensorPin = A1;
 const int relayPin = 9;
 int count = 0;
 
 // GEstione LCD
-uint8_t bell[8] = { 0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4 };
+uint8_t bell[8] = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
 
 /**
   Setup .. initialization
 */
-void setup() {
+void setup()
+{
 
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
@@ -85,7 +82,8 @@ void setup() {
   config.flagMotionSensor = 0;
   config.flagReleTemp = 0;
   config.flagReleLight = 0;
-  for (int i = 0; i < MAX_DAY; i++) {
+  for (int i = 0; i < MAX_DAY; i++)
+  {
     config.day[i].day = -1;
     config.day[i].numProg = 0;
   }
@@ -109,12 +107,14 @@ void setup() {
   rtc.begin();
   LCD = checkI2CAddress(ADDRESS_LCD);
   BMP280 = checkI2CAddress(ADDRESS_BMP280);
-  if (LCD) {
-    lcd.init();  //initialize the lcd
-    lcd.backlight();  //open the backlight
+  if (LCD)
+  {
+    lcd.init();      //initialize the lcd
+    lcd.backlight(); //open the backlight
     config.flagLcd = 1;
   }
-  if (BMP280) {
+  if (BMP280)
+  {
     bme.begin();
   }
   logger.setRTC(&rtc);
@@ -138,9 +138,6 @@ void setup() {
   // read initial temperature values
   readTemperature(true);
 }
-
-
-
 
 void loop()
 {
@@ -178,7 +175,8 @@ void loopREST()
                     wifiConnectionAvailable, configurationAvailable, checkTemperature, checkConfiguration, checkReleTemperature, sendMonitorData);
   */
   // read sensor data
-  if (checkTemperature) {
+  if (checkTemperature)
+  {
     readTemperature(false);
     timeoutReadTemperature = now;
   }
@@ -186,16 +184,18 @@ void loopREST()
   if (wifiConnectionAvailable)
   {
     // Check for Configuration Changes
-    if (checkConfiguration) {
+    if (checkConfiguration)
+    {
       tm.checkUpdate(false, &config);
       timeoutCheckConfiguration = now;
       // force chack temperature
-      checkReleTemperature  = true;
+      checkReleTemperature = true;
     }
   }
 
 #ifdef FLAGRELETEMP
-  if (checkReleTemperature) {
+  if (checkReleTemperature)
+  {
     int currentStatus = config.clientStatus;
     bool on = false;
 
@@ -218,7 +218,8 @@ void loopREST()
   if (wifiConnectionAvailable)
   {
     // send Data to monitor
-    if (sendMonitorData) {
+    if (sendMonitorData)
+    {
       tm.sendMonitorData(&config, &sensorData);
       // reset temp
       readTemperature(true);
@@ -226,17 +227,17 @@ void loopREST()
     }
   }
   logger.printlnLog("Check FreeMemory %d", freeMemory());
-  delay (WAIT_MAIN_LOOP);
+  delay(WAIT_MAIN_LOOP);
 }
-
 
 /**
   Recupera record di programmazione corrente in base a giorno / ora
 */
-void getCurrentProgrammingRecord(PROG_TIME * progRecord, CONFIG * conf) {
+void getCurrentProgrammingRecord(PROG_TIME *progRecord, CONFIG *conf)
+{
   // get current day and time
   time_t t = tm.getWiFiTime(); //hc.getTime() + ONE_HOUR;
-  struct tm * timeinfo;
+  struct tm *timeinfo;
   timeinfo = localtime(&t);
   logger.printlnLog("GET Programming NOW : day %d, hour %d , minute %d, dayl %d",
                     timeinfo->tm_wday, timeinfo->tm_hour, timeinfo->tm_min,
@@ -247,10 +248,12 @@ void getCurrentProgrammingRecord(PROG_TIME * progRecord, CONFIG * conf) {
     day = 6;
   progRecord->minTemp = conf->minTemp;
   progRecord->priorityDisp = 0;
-  for (int i = 0; i < conf->day[day].numProg; i++) {
+  for (int i = 0; i < conf->day[day].numProg; i++)
+  {
     int ts = conf->day[day].prog[i].timeStart;
     int te = conf->day[day].prog[i].timeEnd;
-    if (ts <= tnow && tnow <= te) {
+    if (ts <= tnow && tnow <= te)
+    {
       progRecord->minTemp = conf->day[day].prog[i].minTemp;
       progRecord->priorityDisp = conf->day[day].prog[i].priorityDisp;
       break;
@@ -263,37 +266,39 @@ void getCurrentProgrammingRecord(PROG_TIME * progRecord, CONFIG * conf) {
 /**
    Verifica temperatura ed in funzione di programmazione determina se accendere o meno
 */
-bool checkThermostatStatus(float cT, CONFIG * conf, boolean connectionAvailable) {
+bool checkThermostatStatus(float cT, CONFIG *conf, boolean connectionAvailable)
+{
   bool on = false;
   float tempToCheck = 0;
   float managedTemp = 0;
-  switch (conf->serverStatus) {
-    case STATUS_ON:
-      on = true;
-      break;
-    case STATUS_OFF:
-      on = false;
-      break;
-    case STATUS_MANUAL:
-      tempToCheck = conf->minTempManual;
-      break;
-    case STATUS_AUTO:
-      PROG_TIME progRecord;
-      // recupera record di programmazione temperatura
-      getCurrentProgrammingRecord(&progRecord, conf);
-      tempToCheck = progRecord.minTemp;
-      // recupera temperatura
-      if (connectionAvailable)
-      {
-        managedTemp = getManagedTemperature(progRecord.priorityDisp, conf);
-        if (managedTemp > 0)
-          cT = managedTemp;
-      }
-      break;
+  switch (conf->serverStatus)
+  {
+  case STATUS_ON:
+    on = true;
+    break;
+  case STATUS_OFF:
+    on = false;
+    break;
+  case STATUS_MANUAL:
+    tempToCheck = conf->minTempManual;
+    break;
+  case STATUS_AUTO:
+    PROG_TIME progRecord;
+    // recupera record di programmazione temperatura
+    getCurrentProgrammingRecord(&progRecord, conf);
+    tempToCheck = progRecord.minTemp;
+    // recupera temperatura
+    if (connectionAvailable)
+    {
+      managedTemp = getManagedTemperature(progRecord.priorityDisp, conf);
+      if (managedTemp > 0)
+        cT = managedTemp;
+    }
+    break;
 
-    default:
-      on = false;
-      break;
+  default:
+    on = false;
+    break;
   }
   if (tempToCheck > 0)
     on = cT < tempToCheck;
@@ -304,37 +309,43 @@ bool checkThermostatStatus(float cT, CONFIG * conf, boolean connectionAvailable)
 /**
    Retrive managed temperature according curent programming and status
 */
-float getManagedTemperature(int pryDisp, CONFIG * conf) {
+float getManagedTemperature(int pryDisp, CONFIG *conf)
+{
   // se priorità dispositivo = Default uso dispositivo locale
   if (pryDisp == 0)
     pryDisp = conf->key;
   float tempToCheck = 0.0;
   TEMPDATA tdata;
   tm.getCurrentData(&tdata);
-  if (tdata.num > 0) {
-    switch (tdata.tempMeasure) {
-      case TEMP_AVARAGE:
-        for (int i = 0; i < tdata.num; i++)
-          tempToCheck += tdata.data[i].temperature;
-        tempToCheck = tempToCheck / (float) tdata.num;
-        break;
-      case TEMP_PRIORITY:
-        for (int i = 0; i < tdata.num; i++)
-          if (tdata.data[i].idDisp == pryDisp) {
-            tempToCheck = tdata.data[i].temperature;
-            break;
-          }
-        break;
-      case TEMP_LOCAL:
-        for (int i = 0; i < tdata.num; i++)
-          if (tdata.data[i].idDisp == conf->key) {
-            tempToCheck = tdata.data[i].temperature;
-            break;
-          }
-      default:
-        break;
+  if (tdata.num > 0)
+  {
+    switch (tdata.tempMeasure)
+    {
+    case TEMP_AVARAGE:
+      for (int i = 0; i < tdata.num; i++)
+        tempToCheck += tdata.data[i].temperature;
+      tempToCheck = tempToCheck / (float)tdata.num;
+      break;
+    case TEMP_PRIORITY:
+      for (int i = 0; i < tdata.num; i++)
+        if (tdata.data[i].idDisp == pryDisp)
+        {
+          tempToCheck = tdata.data[i].temperature;
+          break;
+        }
+      break;
+    case TEMP_LOCAL:
+      for (int i = 0; i < tdata.num; i++)
+        if (tdata.data[i].idDisp == conf->key)
+        {
+          tempToCheck = tdata.data[i].temperature;
+          break;
+        }
+    default:
+      break;
     }
-  } else
+  }
+  else
     tempToCheck = conf->minTemp;
   return tempToCheck;
 }
@@ -342,8 +353,10 @@ float getManagedTemperature(int pryDisp, CONFIG * conf) {
 /**
    Read current sensor data
 */
-void readTemperature(boolean init) {
-  if (init) {
+void readTemperature(boolean init)
+{
+  if (init)
+  {
     sensorData.currentTemperature = 99.0;
     sensorData.totalTemperature = 0.0;
     sensorData.totalPressure = 0.0;
@@ -351,11 +364,12 @@ void readTemperature(boolean init) {
     sensorData.humidity = 0.0;
     sensorData.numItem = 0;
   }
-  if (BMP280) {
+  if (BMP280)
+  {
     sensorData.numItem++;
     float p = bme.readPressure();
     float t = bme.readTemperature();
-    float l = (float) analogRead(sensorPin) / 10.24;
+    float l = (float)analogRead(sensorPin) / 10.24;
     sensorData.totalTemperature += t;
     sensorData.totalPressure += p;
     sensorData.totalLight += l;
@@ -363,18 +377,18 @@ void readTemperature(boolean init) {
     float u = bme.readHumidity();
     sensorData.humidity += u;
 #endif
-    sensorData.currentTemperature = sensorData.totalTemperature
-                                    / sensorData.numItem;
+    sensorData.currentTemperature = sensorData.totalTemperature / sensorData.numItem;
     if (false)
       logger.printlnLog(
-        "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
-        t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
+          "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
+          t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
   }
 }
 /*
    Check if I2C address is available
 */
-bool checkI2CAddress(int address) {
+bool checkI2CAddress(int address)
+{
   Wire.beginTransmission(address);
   int error = Wire.endTransmission();
   return error == 0;
@@ -385,13 +399,14 @@ bool checkI2CAddress(int address) {
 */
 bool checkConfiguration(CONFIG *conf, bool connectionAvailable)
 {
-  if (conf->key == 0) {
+  if (conf->key == 0)
+  {
     if (connectionAvailable)
     {
       logger.printlnLog("No configuration available.. call WiFiRegister");
       tm.wiFiRegister(conf);
-
-    } else
+    }
+    else
     {
       logger.printlnLog("No configuration available and No Connection available !!");
     }
@@ -402,10 +417,11 @@ bool checkConfiguration(CONFIG *conf, bool connectionAvailable)
 /**
    Manage LCD output
 */
-void displayStatus() {
+void displayStatus()
+{
   // Get Time
   time_t t = tm.getWiFiTime(); //hc.getTime() + ONE_HOUR;
-  struct tm * timeinfo;
+  struct tm *timeinfo;
   timeinfo = localtime(&t);
   char buffer[80];
   strftime(buffer, 80, "%d-%m-%Y %H:%M:%S", timeinfo);
@@ -413,7 +429,8 @@ void displayStatus() {
   char lcdBuffer[3 * 4 + 2];
   hc.getLocalIp(lcdBuffer);
   logger.printlnLog("Check at %s - IP : %s - FreeMemory %d", buffer, lcdBuffer, freeMemory());
-  if (LCD) {
+  if (LCD)
+  {
     char line[20];
 
     lcd.setCursor(0, 0);
@@ -426,10 +443,11 @@ void displayStatus() {
     lcd.setCursor(0, 2);
     sprintf(line, "%s", buffer);
     lcd.print(line);
-    if (BMP280) {
+    if (BMP280)
+    {
       lcd.createChar(0, bell);
-      char c = (char) 223;
-      char c1 = (char) 0;
+      char c = (char)223;
+      char c1 = (char)0;
       float t;
       if (sensorData.numItem > 0)
         t = sensorData.totalTemperature / sensorData.numItem;
@@ -440,7 +458,8 @@ void displayStatus() {
       lcd.print(line);
       lcd.write(0);
     }
-  } else {
+  }
+  else
+  {
   }
 }
-
