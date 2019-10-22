@@ -8,7 +8,7 @@ ThermManager::ThermManager()
   postData.reserve(2000);
 }
 
-void ThermManager::setHomeConnection(HomeConnection *__hc, RTCZero *__rtc)
+void ThermManager::setHomeConnection(HttpConnection *__hc, RTCZero *__rtc)
 {
   this->hc = __hc;
   this->rtc = __rtc;
@@ -55,16 +55,18 @@ void ThermManager::formatDate(time_t t, char *buffer)
   strftime(buffer, 80, "%d-%m-%Y %H:%M:%S", timeinfo);
 }
 
-int ThermManager::checkRestError(JsonObject *root)
+int ThermManager::checkRestError(DynamicJsonDocument &doc)
 {
-  JsonObject &error = root->get<JsonObject>("error"); // ->["error"];
+  JsonObject error = doc["error"];
+  //JsonObject error = doc.get<JsonObject>("error");
+  //JsonObject error = doc.as<JsonObject>("error");
   int rc = error["code"];
   String message = error["message"];
   logger.printlnLog("Return code %d - %s", rc, message.c_str());
   return rc;
 }
 
-unsigned long ThermManager::convertTime(double t)
+unsigned long ThermManager::convertTime(long t)
 {
   unsigned long l = t / 1000;
   return l;
@@ -141,56 +143,49 @@ unsigned long ThermManager::_wiFiRegister(CONFIG *config)
   postData = "";
   //String postData;
 
-  DinamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
-  JsonObject root = jsonBuffer.as<JsonObject>();
+  DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
+  //JsonObject root = jsonBuffer.as<JsonObject>();
   char macAddress[50];
-  hc->getMacAddress(macAddress);
   char ipAddress[50];
+  // get IP and MAC address
+  hc->getMacAddress(macAddress);
   hc->getLocalIp(ipAddress);
 
-  root["flagLcd"] = config->flagLcd;
-  root["flagLightSensor"] = config->flagLightSensor;
-  root["flagMotionSensor"] = config->flagMotionSensor;
-  root["flagReleTemp"] = config->flagReleTemp;
-  root["flagReleLight"] = config->flagReleLight;
-  root["macAddress"] = macAddress;
-  root["ipAddress"] = ipAddress;
-  root.printTo(postData);
-  if (hc->httpPostMethod(&client, POST_REGISTER, jsonBuffer))
+  jsonBuffer["flagLcd"] = config->flagLcd;
+  jsonBuffer["flagLightSensor"] = config->flagLightSensor;
+  jsonBuffer["flagMotionSensor"] = config->flagMotionSensor;
+  jsonBuffer["flagReleTemp"] = config->flagReleTemp;
+  jsonBuffer["flagReleLight"] = config->flagReleLight;
+  jsonBuffer["macAddress"] = macAddress;
+  jsonBuffer["ipAddress"] = ipAddress;
+  if (hc->httpPostMethod(client, POST_REGISTER, jsonBuffer))
   {
-    //DynamicJsonBuffer jsonBuffer(GET_JSON_BUFFER);
-    DinamicJsonDocument jsonBufferOut(GET_JSON_BUFFER);
-    //StaticJsonBuffer<GET_JSON_BUFFER> jsonBufferOut;
+    DynamicJsonDocument jsonBufferOut(GET_JSON_BUFFER);
     DeserializationError err = deserializeJson(jsonBufferOut, client);
     if (err)
     {
-      logger.printlnLog("parseObject() failed : %s",err.c_str());
-    } else
+      logger.printlnLog("parseObject() failed : %s", err.c_str());
+    }
+    else
     {
-      
-     //JsonObject& data = root["data"];
-      //int d = data["$loki"];
-      //logger.printlnLog("KEY %d", d);
-      //return analizzaWiFiRegisterResponse(config, &root);
-      if (checkRestError(&jsonBufferOut) == REST_RET_OK)
+      if (checkRestError(jsonBufferOut) == REST_RET_OK)
       {
         //JsonObject& data = root.get<JsonObject>("data");
-        JsonObject &data = root["data"];
+        JsonObject data = jsonBufferOut["data"];
         config->lastUpdate = convertTime(
-            data.get<double>("lastUpdate"));
-        config->lastAccess = convertTime(
-            data.get<double>("lastAccess"));
-        config->key = data.get<int>("$loki");
-        config->serverStatus = data.get<int>("status");
+            data["lastUpdate"]);
+        config->lastAccess = convertTime(data["lastAccess"]);
+        config->key = data["$loki"];
+        config->serverStatus = data["status"];
         config->progLoaded = false;
-        config->tempMeasure = data.get<int>("tempMeasure");
+        config->tempMeasure = data["tempMeasure"];
         logger.printlnLog("Key %d - ServerStatus %d - Last %d", config->key,
                           config->serverStatus, config->lastUpdate);
         //unsigned long
         now = hc->getTime();
         if (now == 0)
           now = config->lastAccess;
-        int tzo = data.get<int>("timeZoneOffset");
+        int tzo = data["timeZoneOffset"];
         now -= tzo * 60;
         rtc->setEpoch(now);
         //return now;

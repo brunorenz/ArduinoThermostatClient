@@ -1,17 +1,19 @@
-#include "HomeConnection.h"
+#include "HttpConnection.h"
 
-HomeConnection::HomeConnection()
+HttpConnection::HttpConnection() 
 {
-  this->rtc = NULL;
+//  Parent::
+//  this->rtc = NULL;
 }
-
-void HomeConnection::setRTC(RTCZero *rtc)
+/*
+void HttpConnection::setRTC(RTCZero *rtc)
 {
   this->rtc = rtc;
   logger.setRTC(this->rtc);
 }
-
-bool HomeConnection::connect(char *_ssid, char *_pass, bool wait)
+*/
+/*
+bool HttpConnection::connect(char *_ssid, char *_pass, bool wait)
 {
   // attempt to connect to WiFi network:
   ssid = _ssid;
@@ -49,30 +51,30 @@ bool HomeConnection::connect(char *_ssid, char *_pass, bool wait)
   return status == WL_CONNECTED;
 }
 
-bool HomeConnection::checkConnection(bool wait)
+bool HttpConnection::checkConnection(bool wait)
 {
   if (ssid == NULL)
     return false;
   return connect(ssid, pass, wait);
 }
 
-bool HomeConnection::reconnect(bool wait)
+bool HttpConnection::reconnect(bool wait)
 {
   disconnect();
   return connect(SECRET_SSID, SECRET_PASS, wait);
 }
 
-bool HomeConnection::connect(bool wait)
+bool HttpConnection::connect(bool wait)
 {
   return connect(SECRET_SSID, SECRET_PASS, wait);
 }
 
-void HomeConnection::disconnect()
+void HttpConnection::disconnect()
 {
   WiFi.disconnect();
 }
 
-unsigned long HomeConnection::getTime()
+unsigned long HttpConnection::getTime()
 {
   char temp[80];
   unsigned long epoch;
@@ -89,19 +91,19 @@ unsigned long HomeConnection::getTime()
   return epoch;
 }
 
-int HomeConnection::getConnectionStatus()
+int HttpConnection::getConnectionStatus()
 {
   return WiFi.status();
 }
 
-void HomeConnection::getLocalIp(char *lcdBuffer)
+void HttpConnection::getLocalIp(char *lcdBuffer)
 {
 
   IPAddress ip = WiFi.localIP();
   sprintf(lcdBuffer, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 }
 
-void HomeConnection::getMacAddress(char *lcdBuffer)
+void HttpConnection::getMacAddress(char *lcdBuffer)
 {
   byte mac[6];
   WiFi.macAddress(mac);
@@ -109,8 +111,8 @@ void HomeConnection::getMacAddress(char *lcdBuffer)
   sprintf(lcdBuffer, "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3],
           mac[2], mac[1], mac[0]);
 }
-
-bool HomeConnection::httpGetMethod(WiFiClient *client, char *getString)
+*/
+bool HttpConnection::httpGetMethod(Client &client, char *getString)
 {
   if (initServerConnection(client))
   {
@@ -119,7 +121,7 @@ bool HomeConnection::httpGetMethod(WiFiClient *client, char *getString)
             TERM_SERVER_URL, TERM_SERVER_PORT,
             HTTP_HEADGET);
     logger.printlnLog("HTTP CALL : %s", httpBuffer);
-    client->println(httpBuffer);
+    client.println(httpBuffer);
     if (waitServerResponse(client))
     {
       return true;
@@ -128,14 +130,14 @@ bool HomeConnection::httpGetMethod(WiFiClient *client, char *getString)
   return false;
 }
 /**
-bool HomeConnection::httpPostMethod(WiFiClient *client, char *postString, JsonObject& root) {
+bool HomeConnection::httpPostMethod(Client *client, char *postString, JsonObject& root) {
 
   if (initServerConnection(client)) {
     sprintf(httpBuffer, "POST %s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n%s\r\n\r\n",
             postString, TERM_SERVER_URL, TERM_SERVER_PORT, root.measureLength(), HTTP_HEADPOST);
     logger.printlnLog("HTTP CALL : %s(%d)", httpBuffer,strlen(httpBuffer));
     client->print(httpBuffer);
-    WiFiClient client1;
+    Client client1;
     root.printTo(client1);
     if (waitServerResponse(client)) {
       return true;
@@ -147,7 +149,7 @@ bool HomeConnection::httpPostMethod(WiFiClient *client, char *postString, JsonOb
 
 // https://arduinojson.org/v6/doc/serialization/
 
-bool HomeConnection::httpPostMethod(WiFiClient *client, char *postString, DynamicJsonDocument &doc)
+bool HttpConnection::httpPostMethod(Client &client, char *postString, DynamicJsonDocument &doc)
 {
   if (initServerConnection(client))
   {
@@ -155,8 +157,9 @@ bool HomeConnection::httpPostMethod(WiFiClient *client, char *postString, Dynami
     sprintf(httpBuffer, "POST %s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n%s\r\n\r\n",
             postString, TERM_SERVER_URL, TERM_SERVER_PORT, len1, HTTP_HEADPOST);
     //logger.printlnLog("HTTP CALL : %s(%d)", httpBuffer, strlen(httpBuffer));
-    client->print(httpBuffer);
-    client->println(postData);
+    client.print(httpBuffer);
+    serializeJson(doc,client);
+    //client->println(postData);
     if (waitServerResponse(client))
     {
       return true;
@@ -164,9 +167,9 @@ bool HomeConnection::httpPostMethod(WiFiClient *client, char *postString, Dynami
   }
   return false;
 }
-bool HomeConnection::httpPostMethod(WiFiClient *client, char *postString, String &postData)
+bool HttpConnection::httpPostMethod(Client &client, char *postString, String &postData)
 {
-
+  /*
   if (initServerConnection(client))
   {
     sprintf(httpBuffer, "POST %s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n%s\r\n\r\n",
@@ -179,15 +182,16 @@ bool HomeConnection::httpPostMethod(WiFiClient *client, char *postString, String
       return true;
     }
   }
+  */
   return false;
 }
 
-bool HomeConnection::waitServerResponse(WiFiClient *client)
+bool HttpConnection::waitServerResponse(Client &client)
 {
   bool rc = false;
   // Check HTTP status
   char status[32] = {0};
-  client->readBytesUntil('\r', status, sizeof(status));
+  client.readBytesUntil('\r', status, sizeof(status));
   if (strcmp(status, "HTTP/1.1 200 OK") != 0)
   {
     logger.printlnLog("Unexpected response: %s", status);
@@ -195,11 +199,11 @@ bool HomeConnection::waitServerResponse(WiFiClient *client)
   else
   {
     char endOfHeaders[] = "\r\n\r\n";
-    client->setTimeout(GET_TIMEOUT);
-    bool ok = client->find(endOfHeaders);
+    client.setTimeout(GET_TIMEOUT);
+    bool ok = client.find(endOfHeaders);
     if (ok)
     {
-      logger.printlnLog("Received %d bytes..", client->available());
+      logger.printlnLog("Received %d bytes..", client.available());
       return true;
     }
     else
@@ -209,7 +213,7 @@ bool HomeConnection::waitServerResponse(WiFiClient *client)
 }
 
 /*
-  bool HomeConnection::waitServerResponse(WiFiClient *client) {
+  bool HomeConnection::waitServerResponse(Client *client) {
   logger.printlnLog("Received %d bytes..", client->available());
   return true;
   char endOfHeaders[] = "\r\n\r\n";
@@ -223,17 +227,16 @@ bool HomeConnection::waitServerResponse(WiFiClient *client)
   return false;
   }
 */
-bool HomeConnection::initServerConnection(WiFiClient *client)
+
+bool HttpConnection::initServerConnection(Client &client)
 {
   // close any connection before send a new request.
   // This will free the socket on the WiFi shield
-  if (!client->connected())
-    client->stop();
+  if (!client.connected())
+    client.stop();
   bool rc = false;
-  if (client->connected())
+  if (client.connected())
   {
-
-    //while (client->available()) { client->read(); delay(10); }
     logger.printlnLog("Connection is available..");
     rc = true;
   }
@@ -242,7 +245,7 @@ bool HomeConnection::initServerConnection(WiFiClient *client)
     logger.printlnLog("Connecting to .. %s:%d ..", TERM_SERVER_URL,
                       TERM_SERVER_PORT);
     // if there's a successful connection:
-    if (client->connect(TERM_SERVER_URL, TERM_SERVER_PORT))
+    if (client.connect(TERM_SERVER_URL, TERM_SERVER_PORT))
     {
       logger.printlnLog("connected ..");
       rc = true;
@@ -250,8 +253,6 @@ bool HomeConnection::initServerConnection(WiFiClient *client)
     else
     {
       logger.printlnLog("connection failed");
-      //TODO
-      // try to reconnect to WIFI
       reconnect();
     }
   }

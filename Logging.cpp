@@ -1,86 +1,93 @@
 #include "Logging.h"
 
-Logging::Logging() {
+Logging::Logging()
+{
   available = Serial;
   __rtc = NULL;
 }
 
-Logging::Logging(RTCZero *rtc) {
+Logging::Logging(RTCZero *rtc)
+{
   available = Serial;
   __rtc = rtc;
 }
 
-void Logging::formatData(char * buffer)
+void Logging::formatData(char *buffer)
 {
-	  time_t t = __rtc->getEpoch();
-	  struct tm * timeinfo;
-	  timeinfo = localtime(&t);
+  time_t t = __rtc->getEpoch();
+  struct tm *timeinfo;
+  timeinfo = localtime(&t);
 
-	  strftime(buffer, 80, "%d-%m-%Y %H:%M:%S ", timeinfo);
+  strftime(buffer, 80, "%d-%m-%Y %H:%M:%S ", timeinfo);
 }
 
 
-void Logging::printLog(const char * format, ...)
+
+void Logging::printLog(const char *format, boolean nl , ...)
 {
+  
+}
+template<class ...Args>
+void Logging::printLog(const char *format, Args ... args)
+{
+  printLog(format,false,args...);
 #ifdef MYDEBUG
   if (!available)
     available = Serial;
-  if (available) {
-    #ifdef MALLOC
-    char* printBuffer = (char*)malloc(LOG_BUFFER_SIZE);
-    if (printBuffer !=  NULL)
+  if (available)
+  {
+#ifdef MALLOC
+    char *printBuffer = (char *)malloc(LOG_BUFFER_SIZE);
+    if (printBuffer != NULL)
     {
-    #endif
+#endif
       va_list args;
       va_start(args, format);
 
       vsprintf(printBuffer, format, args);
       va_end(args);
       Serial.print(printBuffer);
-    #ifdef MALLOC
+#ifdef MALLOC
       free(printBuffer);
     }
-    #endif
+#endif
   }
 #endif
 }
 
-
 void Logging::setRTC(RTCZero *rtc)
 {
-	__rtc = rtc;
+  __rtc = rtc;
 }
 
-void Logging::printlnLog(const char * format, ...)
+void Logging::printlnLog(const char *format, ...)
 {
 #ifdef MYDEBUG
   //_printlnLog(true, format);
   if (!available)
     available = Serial;
-  if (available) {
-    #ifdef MALLOC
-    char* printBuffer = (char*)malloc(LOG_BUFFER_SIZE);
-    if (printBuffer !=  NULL)
+  if (available)
+  {
+#ifdef MALLOC
+    char *printBuffer = (char *)malloc(LOG_BUFFER_SIZE);
+    if (printBuffer != NULL)
     {
-    #endif
+#endif
       va_list args;
       va_start(args, format);
 
       vsprintf(printBuffer, format, args);
       va_end(args);
       if (__rtc != NULL)
-    	  {
-    	  formatData(bufferData);
-    	  	  Serial.print(bufferData);
-    	  }
+      {
+        formatData(bufferData);
+        Serial.print(bufferData);
+      }
       Serial.println(printBuffer);
-    #ifdef MALLOC      
+#ifdef MALLOC
       free(printBuffer);
     }
-    #endif
+#endif
   }
 #endif
 }
-
-
-

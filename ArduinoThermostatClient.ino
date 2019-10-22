@@ -3,7 +3,8 @@
 */
 
 #include "TermClient.h"
-#include "HomeConnection.h"
+//#include "HomeConnection.h"
+#include "HttpConnection.h"
 #include "ThermManager.h"
 #include "MemoryFree.h"
 #include "Logging.h"
@@ -26,7 +27,7 @@ char temp[250];
 
 Logging logger;
 RTCZero rtc;
-HomeConnection hc;
+HttpConnection hc;
 ThermManager tm;
 
 // LCD
