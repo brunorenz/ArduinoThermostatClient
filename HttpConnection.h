@@ -21,7 +21,7 @@ public:
   bool httpPostMethod(Client &client, char *postString, DynamicJsonDocument &doc);
   //void setRTC(RTCZero *rtc);
 private:
-  Logging logger;
+  //Logging logger;
   char httpBuffer[HTTPGETBUFFER];
 };
 #endif

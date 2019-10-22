@@ -16,11 +16,13 @@ public:
   Logging(RTCZero *rtc);
   template<class ...Args>
   void printLog(const char *format, Args ... args);
+//  template<class ...Args>
+  void printLog(const char *format, ...);
   void printlnLog(const char *format, ...);
   void setRTC(RTCZero *rtc);
 
 private:
-  void printLog(const char *format, boolean nl , ...);
+  //void printLog(const char *format, boolean nl , ...);
   bool available = false;
   RTCZero *__rtc;
   void formatData(char *buffer);
@@ -29,6 +31,5 @@ private:
 #ifndef MALLOC
   char printBuffer[LOG_BUFFER_SIZE];
 #endif
-  //void _printlnLog(bool ln,const char * format, ...);
 };
 #endif

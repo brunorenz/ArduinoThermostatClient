@@ -35,7 +35,7 @@ private:
   void _wiFiRegisterWS(CONFIG *config);
   void _sendMonitorData(CONFIG *conf, SENSORDATA *sensorData);
   //
-  unsigned long convertTime(long t);
+  unsigned long convertTime(double t);
   int checkRestError(DynamicJsonDocument &doc);
   bool checkThermConfiguration(CONFIG *conf);
   void formatDate(time_t t, char *buffer);

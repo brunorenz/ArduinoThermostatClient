@@ -16,8 +16,8 @@ void ThermManager::setHomeConnection(HttpConnection *__hc, RTCZero *__rtc)
 }
 
 /**
- * Check WiFi Connection
-  */
+   Check WiFi Connection
+*/
 bool ThermManager::checkWiFiConnection()
 {
   if (hc->getConnectionStatus() != WL_CONNECTED)
@@ -31,8 +31,8 @@ bool ThermManager::checkWiFiConnection()
       hc->getLocalIp(lcdIP);
       hc->getMacAddress(lcdMAC);
       logger.printlnLog(
-          "Connection successful - IP Address : %s , MAC Address : %s",
-          lcdIP, lcdMAC);
+        "Connection successful - IP Address : %s , MAC Address : %s",
+        lcdIP, lcdMAC);
     }
     else
     {
@@ -58,15 +58,13 @@ void ThermManager::formatDate(time_t t, char *buffer)
 int ThermManager::checkRestError(DynamicJsonDocument &doc)
 {
   JsonObject error = doc["error"];
-  //JsonObject error = doc.get<JsonObject>("error");
-  //JsonObject error = doc.as<JsonObject>("error");
   int rc = error["code"];
-  String message = error["message"];
-  logger.printlnLog("Return code %d - %s", rc, message.c_str());
+  const char * message = error["message"];
+  logger.printlnLog("Return code %d - %s", rc, message);
   return rc;
 }
 
-unsigned long ThermManager::convertTime(long t)
+unsigned long ThermManager::convertTime(double t)
 {
   unsigned long l = t / 1000;
   return l;
@@ -144,7 +142,6 @@ unsigned long ThermManager::_wiFiRegister(CONFIG *config)
   //String postData;
 
   DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
-  //JsonObject root = jsonBuffer.as<JsonObject>();
   char macAddress[50];
   char ipAddress[50];
   // get IP and MAC address
@@ -162,33 +159,33 @@ unsigned long ThermManager::_wiFiRegister(CONFIG *config)
   {
     DynamicJsonDocument jsonBufferOut(GET_JSON_BUFFER);
     DeserializationError err = deserializeJson(jsonBufferOut, client);
+    logger.printlnLog("Memory usage : %d", jsonBufferOut.memoryUsage());
     if (err)
     {
       logger.printlnLog("parseObject() failed : %s", err.c_str());
     }
     else
     {
+      serializeJson(jsonBufferOut, Serial);
+      Serial.println();
       if (checkRestError(jsonBufferOut) == REST_RET_OK)
       {
         //JsonObject& data = root.get<JsonObject>("data");
         JsonObject data = jsonBufferOut["data"];
-        config->lastUpdate = convertTime(
-            data["lastUpdate"]);
+        config->lastUpdate = convertTime(data["lastUpdate"]);
         config->lastAccess = convertTime(data["lastAccess"]);
         config->key = data["$loki"];
         config->serverStatus = data["status"];
         config->progLoaded = false;
         config->tempMeasure = data["tempMeasure"];
-        logger.printlnLog("Key %d - ServerStatus %d - Last %d", config->key,
-                          config->serverStatus, config->lastUpdate);
-        //unsigned long
         now = hc->getTime();
         if (now == 0)
           now = config->lastAccess;
         int tzo = data["timeZoneOffset"];
         now -= tzo * 60;
         rtc->setEpoch(now);
-        //return now;
+        logger.printlnLog("Key %d - ServerStatus %d - Last %d - LastAccess %d", config->key,
+                          config->serverStatus, config->lastUpdate, config->lastAccess);
       }
     }
   }
@@ -201,9 +198,9 @@ unsigned long ThermManager::_wiFiRegister(CONFIG *config)
 void ThermManager::_getCurrentData(TEMPDATA *outdata)
 {
   /**
-  postData = "";
-  if (hc->httpGetMethod(&client, GET_CURRENTDATA))
-  {
+    postData = "";
+    if (hc->httpGetMethod(&client, GET_CURRENTDATA))
+    {
     //DynamicJsonBuffer jsonBuffer(GET_JSON_BUFFER);
     StaticJsonBuffer<GET_JSON_BUFFER> jsonBuffer;
     JsonObject &root = jsonBuffer.parseObject(client);
@@ -242,7 +239,7 @@ void ThermManager::_getCurrentData(TEMPDATA *outdata)
         }
       }
     }
-  }
+    }
   **/
 }
 
@@ -252,10 +249,10 @@ void ThermManager::_getCurrentData(TEMPDATA *outdata)
 void ThermManager::_checkUpdate(bool first, CONFIG *conf)
 {
   /**
-  postData = "";
-  char GET[100];
-  if (checkThermConfiguration(conf))
-  {
+    postData = "";
+    char GET[100];
+    if (checkThermConfiguration(conf))
+    {
 
     if (first || conf->progLoaded == false)
       sprintf(GET, "%s/%d", GET_CHECK, conf->key);
@@ -355,7 +352,7 @@ void ThermManager::_checkUpdate(bool first, CONFIG *conf)
         }
       }
     }
-  }
+    }
 
   **/
 }
@@ -365,8 +362,6 @@ void ThermManager::_checkUpdate(bool first, CONFIG *conf)
 */
 void ThermManager::_sendMonitorData(CONFIG *conf, SENSORDATA *sensorData)
 {
-  /*
-  postData = "";
   if (checkThermConfiguration(conf))
   {
     if (sensorData->numItem == 0)
@@ -375,34 +370,31 @@ void ThermManager::_sendMonitorData(CONFIG *conf, SENSORDATA *sensorData)
     }
     else
     {
-      //String PostData;
-      //PostData.reserve(1000);
-      StaticJsonBuffer<GET_JSON_BUFFER> jsonBuffer; // (GET_JSON_BUFFER);
-      JsonObject &root = jsonBuffer.createObject();
-      root["temperature"] = sensorData->totalTemperature / sensorData->numItem;
-      root["pressure"] = sensorData->totalPressure / sensorData->numItem / 100.0;
-      root["light"] = sensorData->totalLight / sensorData->numItem;
-      root["humidity"] = sensorData->humidity / sensorData->numItem;
-      root["status"] = conf->clientStatus;
-      root["numSurveys"] = sensorData->numItem;
-      //root.printTo(PostData);
-      int len = root.measureLength();
-      root.printTo(postData);
+      DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
+      jsonBuffer["temperature"] = sensorData->totalTemperature / sensorData->numItem;
+      jsonBuffer["pressure"] = sensorData->totalPressure / sensorData->numItem / 100.0;
+      jsonBuffer["light"] = sensorData->totalLight / sensorData->numItem;
+      jsonBuffer["humidity"] = sensorData->humidity / sensorData->numItem;
+      jsonBuffer["status"] = conf->clientStatus;
+      jsonBuffer["numSurveys"] = sensorData->numItem;
       char POST[100];
       sprintf(POST, "%s/%d", POST_MONITOR, conf->key);
-      if (hc->httpPostMethod(&client, POST, postData))
+      if (hc->httpPostMethod(client, POST, jsonBuffer))
       {
-        //DynamicJsonBuffer jsonBuffer(GET_JSON_BUFFER);
-        StaticJsonBuffer<GET_JSON_BUFFER> jsonBufferOut;
-        JsonObject &rootOut = jsonBufferOut.parseObject(client);
-        if (!rootOut.success())
+        DynamicJsonDocument jsonBufferOut(GET_JSON_BUFFER);
+        DeserializationError err = deserializeJson(jsonBufferOut, client);
+        logger.printlnLog("Memory usage : %d", jsonBufferOut.memoryUsage());
+        if (err)
         {
-          logger.printlnLog("parseObject() failed");
+          logger.printlnLog("parseObject() failed : %s", err.c_str());
         }
         else
-          checkRestError(&rootOut);
+        {
+          serializeJson(jsonBufferOut, Serial);
+          Serial.println();
+          checkRestError(jsonBufferOut);
+        }
       }
     }
   }
-  */
 }
