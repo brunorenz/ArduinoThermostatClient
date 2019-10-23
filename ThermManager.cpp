@@ -158,16 +158,19 @@ unsigned long ThermManager::_wiFiRegister(CONFIG *config)
   if (hc->httpPostMethod(client, POST_REGISTER, jsonBuffer))
   {
     DynamicJsonDocument jsonBufferOut(GET_JSON_BUFFER);
-    DeserializationError err = deserializeJson(jsonBufferOut, client);
-    logger.printlnLog("Memory usage : %d", jsonBufferOut.memoryUsage());
-    if (err)
+    if (hc->deserializeJsonResponse(client, jsonBufferOut))
+    // //ReadLoggingStream loggingStream(wifiClient, Serial);
+    // //deserialzeJson(doc, loggingStream);
+    // DeserializationError err = deserializeJson(jsonBufferOut, client);
+    // logger.printlnLog("Memory usage : %d", jsonBufferOut.memoryUsage());
+    // if (err)
+    // {
+    //   logger.printlnLog("parseObject() failed : %s", err.c_str());
+    // }
+    // else
     {
-      logger.printlnLog("parseObject() failed : %s", err.c_str());
-    }
-    else
-    {
-      serializeJson(jsonBufferOut, Serial);
-      Serial.println();
+      //serializeJson(jsonBufferOut, Serial);
+      //Serial.println();
       if (checkRestError(jsonBufferOut) == REST_RET_OK)
       {
         //JsonObject& data = root.get<JsonObject>("data");
@@ -280,7 +283,6 @@ void ThermManager::_getCurrentData(TEMPDATA *outdata)
     }
   }
 }*/
-
 
 /**
   Check if any update of configuration has been done

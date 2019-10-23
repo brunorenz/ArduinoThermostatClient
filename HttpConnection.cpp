@@ -5,6 +5,30 @@ HttpConnection::HttpConnection()
   //  Parent::
   //  this->rtc = NULL;
 }
+
+bool HttpConnection::deserializeJsonResponse(Client &client, DynamicJsonDocument &doc)
+{
+  bool rc = true;
+  DeserializationError err; // = NULL;
+  if (logger.isLogEnabled())
+  {
+
+    logger.printLog("JSON : ");
+    ReadLoggingStream loggingStream(client, Serial);
+    err = deserializeJson(doc, loggingStream);
+  }
+  else
+  {
+    err = deserializeJson(doc, client);
+  }
+  logger.printlnLog("Memory usage : %d", doc.memoryUsage());
+  if (err)
+  {
+    logger.printlnLog("parseObject() failed : %s", err.c_str());
+    rc = false;
+  }
+  return rc;
+}
 /*
 void HttpConnection::setRTC(RTCZero *rtc)
 {
@@ -156,9 +180,20 @@ bool HttpConnection::httpPostMethod(Client &client, char *postString, DynamicJso
     int len1 = measureJson(doc);
     sprintf(httpBuffer, "POST %s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n%s\r\n\r\n",
             postString, TERM_SERVER_URL, TERM_SERVER_PORT, len1, HTTP_HEADPOST);
-    logger.printlnLog("HTTP CALL : %s", httpBuffer);
-    client.print(httpBuffer);
-    serializeJson(doc, client);
+    if (logger.isLogEnabled())
+    {
+      logger.printLog("HTTP REQUEST : ");
+      WriteLoggingStream loggedStream(client, Serial);
+      loggedStream.print(httpBuffer);
+      serializeJson(doc, loggedStream);
+    }
+    else
+    {
+      //logger.printlnLog("HTTP CALL : %s", httpBuffer);
+      client.print(httpBuffer);
+      serializeJson(doc, client);
+    }
+
     if (waitServerResponse(client))
     {
       return true;

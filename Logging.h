@@ -14,12 +14,13 @@ class Logging
 public:
   Logging();
   Logging(RTCZero *rtc);
-  template<class ...Args>
-  void printLog(const char *format, Args ... args);
-//  template<class ...Args>
+  template <class... Args>
+  void printLog(const char *format, Args... args);
+  //  template<class ...Args>
   void printLog(const char *format, ...);
   void printlnLog(const char *format, ...);
   void setRTC(RTCZero *rtc);
+  bool isLogEnabled();
 
 private:
   //void printLog(const char *format, boolean nl , ...);

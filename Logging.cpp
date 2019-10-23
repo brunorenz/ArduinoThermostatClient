@@ -21,14 +21,21 @@ void Logging::formatData(char *buffer)
   strftime(buffer, 80, "%d-%m-%Y %H:%M:%S ", timeinfo);
 }
 
-
-
-void Logging::printLog(const char *format, ...)
+bool Logging::isLogEnabled()
 {
 #ifdef MYDEBUG
   if (!available)
     available = Serial;
-  if (available)
+#else
+  available = false;
+#endif
+  return available;
+}
+
+void Logging::printLog(const char *format, ...)
+{
+#ifdef MYDEBUG
+  if (isLogEnabled())
   {
 #ifdef MALLOC
     char *printBuffer = (char *)malloc(LOG_BUFFER_SIZE);
@@ -96,13 +103,10 @@ void Logging::setRTC(RTCZero *rtc)
   }
 */
 
-
 void Logging::printlnLog(const char *format, ...)
 {
 #ifdef MYDEBUG
-  if (!available)
-    available = Serial;
-  if (available)
+  if (isLogEnabled())
   {
 #ifdef MALLOC
     char *printBuffer = (char *)malloc(LOG_BUFFER_SIZE);

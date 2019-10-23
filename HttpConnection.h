@@ -5,6 +5,7 @@
 
 #include <WiFi101.h>
 #include <ArduinoJson.h>
+#include <StreamUtils.h>
 #include "WiFiConnection.h"
 #include "TermClient.h"
 #include "Logging.h"
@@ -18,6 +19,8 @@ public:
   bool waitServerResponse(Client &client);
   bool httpGetMethod(Client &client, char *getString);
   bool httpPostMethod(Client &client, char *postString, DynamicJsonDocument &doc);
+
+  bool deserializeJsonResponse(Client &client, DynamicJsonDocument &doc);
 
 private:
   char httpBuffer[HTTPGETBUFFER];
