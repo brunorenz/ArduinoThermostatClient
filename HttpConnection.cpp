@@ -1,9 +1,9 @@
 #include "HttpConnection.h"
 
-HttpConnection::HttpConnection() 
+HttpConnection::HttpConnection()
 {
-//  Parent::
-//  this->rtc = NULL;
+  //  Parent::
+  //  this->rtc = NULL;
 }
 /*
 void HttpConnection::setRTC(RTCZero *rtc)
@@ -156,33 +156,14 @@ bool HttpConnection::httpPostMethod(Client &client, char *postString, DynamicJso
     int len1 = measureJson(doc);
     sprintf(httpBuffer, "POST %s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n%s\r\n\r\n",
             postString, TERM_SERVER_URL, TERM_SERVER_PORT, len1, HTTP_HEADPOST);
-    //logger.printlnLog("HTTP CALL : %s(%d)", httpBuffer, strlen(httpBuffer));
+    logger.printlnLog("HTTP CALL : %s", httpBuffer);
     client.print(httpBuffer);
-    serializeJson(doc,client);
-    //client->println(postData);
+    serializeJson(doc, client);
     if (waitServerResponse(client))
     {
       return true;
     }
   }
-  return false;
-}
-bool HttpConnection::httpPostMethod(Client &client, char *postString, String &postData)
-{
-  /*
-  if (initServerConnection(client))
-  {
-    sprintf(httpBuffer, "POST %s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n%s\r\n\r\n",
-            postString, TERM_SERVER_URL, TERM_SERVER_PORT, postData.length(), HTTP_HEADPOST);
-    logger.printlnLog("HTTP CALL : %s(%d)", httpBuffer, strlen(httpBuffer));
-    client->print(httpBuffer);
-    client->println(postData);
-    if (waitServerResponse(client))
-    {
-      return true;
-    }
-  }
-  */
   return false;
 }
 

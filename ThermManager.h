@@ -48,7 +48,7 @@ private:
   //bool webSocketBegin;
   //
   WiFiClient client;
-  String postData;
+  //String postData;
   //
   //int wifiRegisterCount;
   //int checkUpdateCount;
