@@ -52,7 +52,8 @@ void Logging::printLog(const char *format, ...)
         formatData(bufferData);
         Serial.print(bufferData);
       }
-      Serial.print(sizeof(printBuffer));
+      //Serial.print(sizeof(printBuffer));
+      //Serial.print(" ");
       Serial.print(printBuffer);
 #ifdef MALLOC
       free(printBuffer);
@@ -123,8 +124,8 @@ void Logging::printlnLog(const char *format, ...)
         formatData(bufferData);
         Serial.print(bufferData);
       }
-      Serial.print(strlen(printBuffer));
-      Serial.print(" ");
+      //Serial.print(strlen(printBuffer));
+      //Serial.print(" ");
       Serial.println(printBuffer);
 #ifdef MALLOC
       free(printBuffer);

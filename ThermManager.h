@@ -1,6 +1,8 @@
 #ifndef ThermManager_h
 #define ThermManager_h
 
+#define ARDUINOJSON_USE_LONG_LONG 1 
+
 #include <RTCZero.h>
 #include <ArduinoJson.h>
 #include <stdarg.h>

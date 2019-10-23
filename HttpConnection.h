@@ -2,6 +2,7 @@
 #define HttpConnection_h
 
 #define HTTPGETBUFFER 200
+#define ARDUINOJSON_USE_LONG_LONG 1 
 
 #include <WiFi101.h>
 #include <ArduinoJson.h>

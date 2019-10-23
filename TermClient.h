@@ -13,7 +13,7 @@
 
 #define ONE_HOUR 3600
 #define TERM_SERVER_URL_REMOTE "192.168.0.119"
-#define TERM_SERVER_URL_LOCAL "192.168.0.119"
+#define TERM_SERVER_URL_LOCAL "192.168.0.107"
 #ifdef LOCAL
 #define TERM_SERVER_URL TERM_SERVER_URL_LOCAL
 #else
@@ -34,7 +34,7 @@
 #define ADDRESS_BMP280 0x76
 #define ADDRESS_BME280 0x76
 
-#define MYDEBUG
+#define MYDEBUG_
 #define BME
 #define NO_BMP
 

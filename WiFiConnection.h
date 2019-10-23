@@ -5,7 +5,6 @@
 
 #include <WiFi101.h>
 #include <RTCZero.h>
-//#include <ArduinoJson.h>
 #include "TermClient.h"
 #include "Logging.h"
 

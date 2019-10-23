@@ -186,6 +186,7 @@ bool HttpConnection::httpPostMethod(Client &client, char *postString, DynamicJso
       WriteLoggingStream loggedStream(client, Serial);
       loggedStream.print(httpBuffer);
       serializeJson(doc, loggedStream);
+      Serial.println();
     }
     else
     {

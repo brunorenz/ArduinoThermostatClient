@@ -203,16 +203,18 @@ void ThermManager::_getCurrentData(TEMPDATA *outdata)
   if (hc->httpGetMethod(client, GET_CURRENTDATA))
   {
     DynamicJsonDocument jsonBufferOut(GET_JSON_BUFFER);
-    DeserializationError err = deserializeJson(jsonBufferOut, client);
-    logger.printlnLog("Memory usage : %d", jsonBufferOut.memoryUsage());
-    if (err)
+    if (hc->deserializeJsonResponse(client, jsonBufferOut))
     {
-      logger.printlnLog("parseObject() failed : %s", err.c_str());
-    }
-    else
-    {
-      serializeJson(jsonBufferOut, Serial);
-      Serial.println();
+    // DeserializationError err = deserializeJson(jsonBufferOut, client);
+    // logger.printlnLog("Memory usage : %d", jsonBufferOut.memoryUsage());
+    // if (err)
+    // {
+    //   logger.printlnLog("parseObject() failed : %s", err.c_str());
+    // }
+    // else
+    // {
+    //   serializeJson(jsonBufferOut, Serial);
+    //   Serial.println();
       if (checkRestError(jsonBufferOut) == REST_RET_OK)
       {
         JsonObject data = jsonBufferOut["data"];
@@ -302,16 +304,18 @@ void ThermManager::_checkUpdate(bool first, CONFIG *conf)
     if (hc->httpGetMethod(client, GET))
     {
       DynamicJsonDocument jsonBufferOut(GET_JSON_BUFFER);
-      DeserializationError err = deserializeJson(jsonBufferOut, client);
-      logger.printlnLog("Memory usage : %d", jsonBufferOut.memoryUsage());
-      if (err)
+      if (hc->deserializeJsonResponse(client, jsonBufferOut))
       {
-        logger.printlnLog("parseObject() failed : %s", err.c_str());
-      }
-      else
-      {
-        serializeJson(jsonBufferOut, Serial);
-        Serial.println();
+      // DeserializationError err = deserializeJson(jsonBufferOut, client);
+      // logger.printlnLog("Memory usage : %d", jsonBufferOut.memoryUsage());
+      // if (err)
+      // {
+      //   logger.printlnLog("parseObject() failed : %s", err.c_str());
+      // }
+      // else
+      // {
+      //   serializeJson(jsonBufferOut, Serial);
+      //   Serial.println();
         if (checkRestError(jsonBufferOut) == REST_RET_OK)
         {
           JsonObject data = jsonBufferOut["data"];
@@ -507,16 +511,18 @@ void ThermManager::_sendMonitorData(CONFIG *conf, SENSORDATA *sensorData)
       if (hc->httpPostMethod(client, POST, jsonBuffer))
       {
         DynamicJsonDocument jsonBufferOut(GET_JSON_BUFFER);
-        DeserializationError err = deserializeJson(jsonBufferOut, client);
-        logger.printlnLog("Memory usage : %d", jsonBufferOut.memoryUsage());
-        if (err)
+        if (hc->deserializeJsonResponse(client, jsonBufferOut))
         {
-          logger.printlnLog("parseObject() failed : %s", err.c_str());
-        }
-        else
-        {
-          serializeJson(jsonBufferOut, Serial);
-          Serial.println();
+        // DeserializationError err = deserializeJson(jsonBufferOut, client);
+        // logger.printlnLog("Memory usage : %d", jsonBufferOut.memoryUsage());
+        // if (err)
+        // {
+        //   logger.printlnLog("parseObject() failed : %s", err.c_str());
+        // }
+        // else
+        // {
+        //   serializeJson(jsonBufferOut, Serial);
+        //   Serial.println();
           checkRestError(jsonBufferOut);
         }
       }
