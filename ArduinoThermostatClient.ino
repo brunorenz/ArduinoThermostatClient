@@ -26,10 +26,13 @@ char temp[250];
 
 Logging logger;
 RTCZero rtc;
-//HttpConnection hc;
-ThermManager tm;
 
+ThermManager tm;
+#ifdef USE_MQ
 WiFiConnection wifi;
+#else
+HttpConnection hc;
+#endif
 
 // LCD
 LiquidCrystal_I2C lcd(ADDRESS_LCD, 20, 4);
@@ -129,8 +132,10 @@ void setup()
   pinMode(relayPin, OUTPUT);
   // Set resolution for analog read
   analogReadResolution(10);
+  setupMQ();
+  //setupREST();
   // Set connection to Thermostat Manager
-  wifi.setRTC(&rtc);
+  //wifi.setRTC(&rtc);
   //tm.setHomeConnection(&hc, &rtc); //, &client);
   timeoutCallMonitor = millis();
   timeoutReadTemperature = timeoutCallMonitor;
@@ -139,6 +144,18 @@ void setup()
   timeoutSetTemperatureRele = 0;
   // read initial temperature values
   readTemperature(true);
+}
+
+void setupMQ()
+{
+  wifi.setRTC(&rtc);
+}
+
+void setupREST()
+{
+  // Set connection to Thermostat Manager
+  wifi.setRTC(&rtc);
+  //tm.setHomeConnection(&hc, &rtc); //, &client);
 }
 
 void loop()
@@ -151,7 +168,11 @@ void loop()
 }
 void loopMQ()
 {
-
+  // check WiFi Connection
+  // if true check MQ Connection
+  // if true WifI WiFiRegister
+  // if (config not found  getConnection)
+  // subscribe (updatePrograming and updateThemperature)
 }
 void loopREST()
 {
