@@ -19,6 +19,14 @@
 #else
 #define TERM_SERVER_URL TERM_SERVER_URL_REMOTE
 #endif
+/*
+ * MQTT definition
+ */
+#define TERM_SERVER_MQ  "192.168.0.120"
+#define TOPIC_WIFI      "ThermApp/wifiRegister"
+#define TOPIC_LASTWILL  "ThermApp/lastWill"
+#define TOPIC_GETPROG   "ThermApp/getProgramming"
+
 //#define TERM_SERVER_URL_REMOTE       "51.68.197.97"
 #define TERM_SERVER_PORT 8100
 
@@ -34,7 +42,7 @@
 #define ADDRESS_BMP280 0x76
 #define ADDRESS_BME280 0x76
 
-#define MYDEBUG_
+#define MYDEBUG
 #define BME
 #define NO_BMP
 

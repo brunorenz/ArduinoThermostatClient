@@ -62,47 +62,11 @@ void Logging::printLog(const char *format, ...)
   }
 #endif
 }
-/*
-template<class ...Args>
-void Logging::printLog(const char *format, Args ... args)
-{
-  printLog(format, false, args...);
-#ifdef MYDEBUG
-  if (!available)
-    available = Serial;
-  if (available)
-  {
-#ifdef MALLOC
-    char *printBuffer = (char *)malloc(LOG_BUFFER_SIZE);
-    if (printBuffer != NULL)
-    {
-#endif
-      va_list args;
-      va_start(args, format);
 
-      vsprintf(printBuffer, format, args);
-      va_end(args);
-      Serial.print(printBuffer);
-#ifdef MALLOC
-      free(printBuffer);
-    }
-#endif
-  }
-#endif
-}
-*/
 void Logging::setRTC(RTCZero *rtc)
 {
   __rtc = rtc;
 }
-
-/*
-  template<class ...Args>
-  void Logging::printlnLog(const char *format, Args ... args)
-  {
-  printLog(format, true, args...);
-  }
-*/
 
 void Logging::printlnLog(const char *format, ...)
 {

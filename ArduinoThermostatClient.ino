@@ -3,7 +3,6 @@
 */
 
 #include "TermClient.h"
-//#include "HomeConnection.h"
 #include "HttpConnection.h"
 #include "ThermManager.h"
 #include "MemoryFree.h"
@@ -27,8 +26,10 @@ char temp[250];
 
 Logging logger;
 RTCZero rtc;
-HttpConnection hc;
+//HttpConnection hc;
 ThermManager tm;
+
+WiFiConnection wifi;
 
 // LCD
 LiquidCrystal_I2C lcd(ADDRESS_LCD, 20, 4);
@@ -129,8 +130,8 @@ void setup()
   // Set resolution for analog read
   analogReadResolution(10);
   // Set connection to Thermostat Manager
-  hc.setRTC(&rtc);
-  tm.setHomeConnection(&hc, &rtc); //, &client);
+  wifi.setRTC(&rtc);
+  //tm.setHomeConnection(&hc, &rtc); //, &client);
   timeoutCallMonitor = millis();
   timeoutReadTemperature = timeoutCallMonitor;
   // call as soon as possible the first time
@@ -145,10 +146,13 @@ void loop()
 #ifdef WEBSOCKET
   loopWS();
 #else
-  loopREST();
+  loopMQ();
 #endif
 }
+void loopMQ()
+{
 
+}
 void loopREST()
 {
   // check connection
