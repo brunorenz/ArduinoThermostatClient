@@ -27,9 +27,13 @@ char temp[250];
 Logging logger;
 RTCZero rtc;
 
+WiFiConnection wifi;
+WiFiClient wifiClient;
+MqttClient mqttClient(wifiClient);
+
 ThermManager tm;
 #ifdef USE_MQ
-WiFiConnection wifi;
+
 #else
 HttpConnection hc;
 #endif
