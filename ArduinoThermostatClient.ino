@@ -70,6 +70,10 @@ int count = 0;
 // GEstione LCD
 uint8_t bell[8] = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
 
+int checkServerConnection(WiFiClient &client)
+{
+  uint8_t connected = client.connected();
+}
 /**
   Setup .. initialization
 */
@@ -137,7 +141,6 @@ void setup()
   // Set resolution for analog read
   analogReadResolution(10);
   setupMQ();
-  //setupREST();
   // Set connection to Thermostat Manager
   //wifi.setRTC(&rtc);
   //tm.setHomeConnection(&hc, &rtc); //, &client);
@@ -153,6 +156,7 @@ void setup()
 void setupMQ()
 {
   wifi.setRTC(&rtc);
+  //wifi.connect();
 }
 
 void setupREST()
@@ -172,6 +176,10 @@ void loop()
 }
 void loopMQ()
 {
+  bool wifiConnectionAvailable = wifi.connect();
+  if (wifiConnectionAvailable)
+  {
+  }
   // check WiFi Connection
   // if true check MQ Connection
   // if true WifI WiFiRegister

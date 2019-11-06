@@ -160,6 +160,8 @@ struct CONFIG
   bool progLoaded;
   long lastUpdate;
   unsigned long lastAccess;
+  char *macAddress;
+  char *ipAddress;
   PROGRAM_DAY day[MAX_DAY];
 };
 

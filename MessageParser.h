@@ -1,7 +1,7 @@
 #ifndef MessageParser_h
 #define MessageParser_h
 
-#define ARDUINOJSON_USE_LONG_LONG 1 
+#define ARDUINOJSON_USE_LONG_LONG 1
 
 #include <RTCZero.h>
 #include <ArduinoJson.h>
@@ -14,7 +14,7 @@ class MessageParser
 {
 public:
   MessageParser();
-  void preparaWiFiRegisterRequest(CONFIG *config, JsonObject &root);
+  void preparaWiFiRegisterRequest(CONFIG *config, DynamicJsonDocument &root);
 
 private:
   int checkRestError(DynamicJsonDocument &doc);

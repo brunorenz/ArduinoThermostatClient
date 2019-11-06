@@ -8,9 +8,7 @@ MessageParser::MessageParser()
   //postData.reserve(2000);
 }
 
-
-
-void MessageParser::preparaWiFiRegisterRequest(CONFIG *config, JsonObject &root)
+void MessageParser::preparaWiFiRegisterRequest(CONFIG *config, DynamicJsonDocument &root)
 {
   DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
   char macAddress[50];
@@ -26,9 +24,7 @@ void MessageParser::preparaWiFiRegisterRequest(CONFIG *config, JsonObject &root)
   jsonBuffer["flagReleLight"] = config->flagReleLight;
   jsonBuffer["macAddress"] = macAddress;
   jsonBuffer["ipAddress"] = ipAddress;
-
 }
-
 
 int MessageParser::checkRestError(DynamicJsonDocument &doc)
 {

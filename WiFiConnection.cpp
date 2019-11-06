@@ -11,15 +11,15 @@ void WiFiConnection::setRTC(RTCZero *rtc)
   logger.setRTC(this->rtc);
 }
 
-bool WiFiConnection::connect(char *_ssid, char *_pass, bool wait)
+bool WiFiConnection::connect(bool wait)
 {
   // attempt to connect to WiFi network:
-  ssid = _ssid;
-  pass = _pass;
+  //ssid = _ssid;
+  //pass = _pass;
   int status = WiFi.status();
   logger.printlnLog(
       "Attempting to connect to WPA SSID: %s : Current WiFi status : %d",
-      ssid, status);
+      SECRET_SSID, status);
   if (status == WL_NO_SHIELD)
   {
     logger.printlnLog("WiFi shield not present");
@@ -37,7 +37,7 @@ bool WiFiConnection::connect(char *_ssid, char *_pass, bool wait)
       //myprintln(ssid);
 
       // Connect to WPA/WPA2 network:
-      status = WiFi.begin(ssid, pass);
+      status = WiFi.begin(SECRET_SSID, SECRET_PASS);
 
       // wait 10 seconds for connection:
       delay(CONNECT_WAIT_TIME);
@@ -51,20 +51,13 @@ bool WiFiConnection::connect(char *_ssid, char *_pass, bool wait)
 
 bool WiFiConnection::checkConnection(bool wait)
 {
-  if (ssid == NULL)
-    return false;
-  return connect(ssid, pass, wait);
+  return connect(wait);
 }
 
 bool WiFiConnection::reconnect(bool wait)
 {
   disconnect();
-  return connect(SECRET_SSID, SECRET_PASS, wait);
-}
-
-bool WiFiConnection::connect(bool wait)
-{
-  return connect(SECRET_SSID, SECRET_PASS, wait);
+  return connect(wait);
 }
 
 void WiFiConnection::disconnect()
@@ -105,7 +98,6 @@ void WiFiConnection::getMacAddress(char *lcdBuffer)
 {
   byte mac[6];
   WiFi.macAddress(mac);
-  IPAddress ip = WiFi.localIP();
   sprintf(lcdBuffer, "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3],
           mac[2], mac[1], mac[0]);
 }

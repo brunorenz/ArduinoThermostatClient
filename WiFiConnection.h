@@ -14,7 +14,6 @@ public:
   WiFiConnection();
   bool checkConnection(bool wait = false);
   bool connect(bool wait = false);
-  bool connect(char *_ssid, char *_pass, bool wait = false);
   void disconnect();
   int getConnectionStatus();
   unsigned long getTime();
@@ -25,12 +24,13 @@ public:
 
 protected:
   bool reconnect(bool wait = false);
+  //bool connect(char *_ssid, char *_pass, bool wait = false);
   Logging logger;
 
-private:  
+private:
   RTCZero *rtc;
-  char *ssid;
-  char *pass;
+  //char *ssid;
+  //char *pass;
   char httpBuffer[HTTPGETBUFFER];
 };
 #endif
