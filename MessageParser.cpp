@@ -8,7 +8,7 @@ MessageParser::MessageParser()
   //postData.reserve(2000);
 }
 
-void MessageParser::preparaWiFiRegisterRequest(CONFIG *config, DynamicJsonDocument &jsonBuffer)
+void MessageParser::preparaWiFiRegisterRequest(CONFIG &config, DynamicJsonDocument &jsonBuffer)
 {
   //DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
   /*
@@ -18,13 +18,13 @@ void MessageParser::preparaWiFiRegisterRequest(CONFIG *config, DynamicJsonDocume
   hc->getMacAddress(macAddress);
   hc->getLocalIp(ipAddress);
   */
-  jsonBuffer["flagLcd"] = config->flagLcd;
-  jsonBuffer["flagLightSensor"] = config->flagLightSensor;
-  jsonBuffer["flagMotionSensor"] = config->flagMotionSensor;
-  jsonBuffer["flagReleTemp"] = config->flagReleTemp;
-  jsonBuffer["flagReleLight"] = config->flagReleLight;
-  jsonBuffer["macAddress"] = config->macAddress;
-  jsonBuffer["ipAddress"] = config->ipAddress;
+  jsonBuffer["flagLcd"] = config.flagLcd;
+  jsonBuffer["flagLightSensor"] = config.flagLightSensor;
+  jsonBuffer["flagMotionSensor"] = config.flagMotionSensor;
+  jsonBuffer["flagReleTemp"] = config.flagReleTemp;
+  jsonBuffer["flagReleLight"] = config.flagReleLight;
+  jsonBuffer["macAddress"] = config.macAddress;
+  jsonBuffer["ipAddress"] = config.ipAddress;
 }
 
 int MessageParser::checkRestError(DynamicJsonDocument &doc)

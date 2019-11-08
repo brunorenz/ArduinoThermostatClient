@@ -1,7 +1,7 @@
 #ifndef WiFiConnection_h
 #define WiFiConnection_h
 
-#define HTTPGETBUFFER 1000
+//#define HTTPGETBUFFER 1000
 
 #include <WiFi101.h>
 #include <RTCZero.h>
@@ -19,7 +19,8 @@ public:
   unsigned long getTime();
   void getLocalIp(char *ip);
   void getMacAddress(char *mac);
-  void setRTC(RTCZero *rtc);
+  //void setRTC(RTCZero *rtc);
+  void updateRTC(RTCZero &rtc, int timeZoneOffset);
   bool initServerConnection(Client *client);
 
 protected:
@@ -28,9 +29,9 @@ protected:
   Logging logger;
 
 private:
-  RTCZero *rtc;
+  //RTCZero *rtc;
   //char *ssid;
   //char *pass;
-  char httpBuffer[HTTPGETBUFFER];
+  //char httpBuffer[HTTPGETBUFFER];
 };
 #endif

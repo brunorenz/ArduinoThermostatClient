@@ -27,6 +27,7 @@
 #define TOPIC_WIFI "ThermApp/wifiRegister"
 #define TOPIC_LASTWILL "ThermApp/lastWill"
 #define TOPIC_GETPROG "ThermApp/getProgramming"
+#define TOPIC_UPDATEPROG "ThermApp/updateProgramming"
 
 //#define TERM_SERVER_URL_REMOTE       "51.68.197.97"
 #define TERM_SERVER_PORT 8100

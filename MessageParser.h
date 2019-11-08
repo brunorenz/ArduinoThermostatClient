@@ -14,7 +14,7 @@ class MessageParser
 {
 public:
   MessageParser();
-  void preparaWiFiRegisterRequest(CONFIG *config, DynamicJsonDocument &root);
+  void preparaWiFiRegisterRequest(CONFIG &config, DynamicJsonDocument &root);
 
 private:
   int checkRestError(DynamicJsonDocument &doc);
