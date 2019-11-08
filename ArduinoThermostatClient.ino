@@ -15,6 +15,7 @@
 #include <time.h>
 #include <string.h>
 #include <ArduinoJson.h>
+#include <ArduinoMqttClient.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
 #include <Adafruit_BME280.h>
@@ -66,6 +67,7 @@ SENSORDATA sensorData;
 const int sensorPin = A1;
 const int relayPin = 9;
 int count = 0;
+bool willSent = 0;
 
 // GEstione LCD
 uint8_t bell[8] = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
@@ -95,11 +97,15 @@ void setup()
   config.flagMotionSensor = 0;
   config.flagReleTemp = 0;
   config.flagReleLight = 0;
+  config.registered= false;
   for (int i = 0; i < MAX_DAY; i++)
   {
     config.day[i].day = -1;
     config.day[i].numProg = 0;
   }
+  config.macAddress[0] = 0;
+  config.ipAddress[0] = 0;
+
 
 #ifdef FLAGLIGHT
   config.flagLightSensor = 1;
@@ -174,18 +180,88 @@ void loop()
   loopMQ();
 #endif
 }
+
+bool checkMQConnection()
+{
+  int rc = 1;
+  if (!mqttClient.connected())
+  {
+    // set a will message, used by the broker when the connection dies unexpectantly
+    // you must know the size of the message before hand, and it must be set before connecting
+    sendWillMessage();
+    const char broker[]    = TERM_SERVER_MQ;
+    int        port        = 1883;
+    rc = mqttClient.connect(broker, port);
+    if (!rc)
+    {
+      Serial.print("MQTT connection failed! Error code = ");
+      Serial.println(mqttClient.connectError());
+    }
+  }
+  return rc == 1;
+}
+
 void loopMQ()
 {
+  long now = millis();
+  bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
+
   bool wifiConnectionAvailable = wifi.connect();
   if (wifiConnectionAvailable)
   {
+
+    //char macAddress[50];
+    //char ipAddress[50];
+
+    // get IP and MAC address
+    wifi.getMacAddress(config.macAddress);
+    wifi.getLocalIp(config.ipAddress);
+    //config.macAddress = macAddress;
+    //config.ipAddress = ipAddress;
+    bool mqttConnectionAvailable = checkMQConnection();
+    if (mqttConnectionAvailable)
+    {
+      logger.printlnLog("Connection WIFI and MQ ok!");
+      if (!config.registered)
+      {
+        
+      }
+    }
   }
+  // read sensor data
+  if (checkTemperature)
+  {
+    readTemperature(false);
+    timeoutReadTemperature = now;
+  }
+  logger.printlnLog("Check FreeMemory %d", freeMemory());
+  delay(WAIT_MAIN_LOOP);
+
   // check WiFi Connection
   // if true check MQ Connection
   // if true WifI WiFiRegister
   // if (config not found  getConnection)
   // subscribe (updatePrograming and updateThemperature)
 }
+
+
+void sendWillMessage()
+{
+  // set a will message, used by the broker when the connection dies unexpectantly
+  // you must know the size of the message before hand, and it must be set before connecting
+  char willPayload[100];
+  sprintf(willPayload, "{\"macAddress\":\"%s\"}", config.macAddress);
+  bool willRetain = true;
+  int willQos = 1;
+  char willTopic[] = TOPIC_LASTWILL;
+
+  mqttClient.beginWill(willTopic, strlen(willPayload), willRetain, willQos);
+  mqttClient.print(willPayload);
+  mqttClient.endWill();
+  logger.printlnLog("Send Will message %s", willPayload);
+  willSent = 1;
+}
+
 void loopREST()
 {
   // check connection
@@ -311,32 +387,32 @@ bool checkThermostatStatus(float cT, CONFIG *conf, boolean connectionAvailable)
   float managedTemp = 0;
   switch (conf->serverStatus)
   {
-  case STATUS_ON:
-    on = true;
-    break;
-  case STATUS_OFF:
-    on = false;
-    break;
-  case STATUS_MANUAL:
-    tempToCheck = conf->minTempManual;
-    break;
-  case STATUS_AUTO:
-    PROG_TIME progRecord;
-    // recupera record di programmazione temperatura
-    getCurrentProgrammingRecord(&progRecord, conf);
-    tempToCheck = progRecord.minTemp;
-    // recupera temperatura
-    if (connectionAvailable)
-    {
-      managedTemp = getManagedTemperature(progRecord.priorityDisp, conf);
-      if (managedTemp > 0)
-        cT = managedTemp;
-    }
-    break;
+    case STATUS_ON:
+      on = true;
+      break;
+    case STATUS_OFF:
+      on = false;
+      break;
+    case STATUS_MANUAL:
+      tempToCheck = conf->minTempManual;
+      break;
+    case STATUS_AUTO:
+      PROG_TIME progRecord;
+      // recupera record di programmazione temperatura
+      getCurrentProgrammingRecord(&progRecord, conf);
+      tempToCheck = progRecord.minTemp;
+      // recupera temperatura
+      if (connectionAvailable)
+      {
+        managedTemp = getManagedTemperature(progRecord.priorityDisp, conf);
+        if (managedTemp > 0)
+          cT = managedTemp;
+      }
+      break;
 
-  default:
-    on = false;
-    break;
+    default:
+      on = false;
+      break;
   }
   if (tempToCheck > 0)
     on = cT < tempToCheck;
@@ -359,28 +435,28 @@ float getManagedTemperature(int pryDisp, CONFIG *conf)
   {
     switch (tdata.tempMeasure)
     {
-    case TEMP_AVARAGE:
-      for (int i = 0; i < tdata.num; i++)
-        tempToCheck += tdata.data[i].temperature;
-      tempToCheck = tempToCheck / (float)tdata.num;
-      break;
-    case TEMP_PRIORITY:
-      for (int i = 0; i < tdata.num; i++)
-        if (tdata.data[i].idDisp == pryDisp)
-        {
-          tempToCheck = tdata.data[i].temperature;
-          break;
-        }
-      break;
-    case TEMP_LOCAL:
-      for (int i = 0; i < tdata.num; i++)
-        if (tdata.data[i].idDisp == conf->key)
-        {
-          tempToCheck = tdata.data[i].temperature;
-          break;
-        }
-    default:
-      break;
+      case TEMP_AVARAGE:
+        for (int i = 0; i < tdata.num; i++)
+          tempToCheck += tdata.data[i].temperature;
+        tempToCheck = tempToCheck / (float)tdata.num;
+        break;
+      case TEMP_PRIORITY:
+        for (int i = 0; i < tdata.num; i++)
+          if (tdata.data[i].idDisp == pryDisp)
+          {
+            tempToCheck = tdata.data[i].temperature;
+            break;
+          }
+        break;
+      case TEMP_LOCAL:
+        for (int i = 0; i < tdata.num; i++)
+          if (tdata.data[i].idDisp == conf->key)
+          {
+            tempToCheck = tdata.data[i].temperature;
+            break;
+          }
+      default:
+        break;
     }
   }
   else
@@ -418,8 +494,8 @@ void readTemperature(boolean init)
     sensorData.currentTemperature = sensorData.totalTemperature / sensorData.numItem;
     if (false)
       logger.printlnLog(
-          "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
-          t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
+        "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
+        t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
   }
 }
 /*
@@ -465,7 +541,7 @@ void displayStatus()
   strftime(buffer, 80, "%d-%m-%Y %H:%M:%S", timeinfo);
   // get ip adress
   char lcdBuffer[3 * 4 + 2];
-  hc.getLocalIp(lcdBuffer);
+  wifi.getLocalIp(lcdBuffer);
   logger.printlnLog("Check at %s - IP : %s - FreeMemory %d", buffer, lcdBuffer, freeMemory());
   if (LCD)
   {

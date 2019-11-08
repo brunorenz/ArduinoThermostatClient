@@ -158,10 +158,12 @@ struct CONFIG
   int flagReleTemp;
   int flagReleLight;
   bool progLoaded;
+  bool registered;
+  //
   long lastUpdate;
   unsigned long lastAccess;
-  char *macAddress;
-  char *ipAddress;
+  char macAddress[50];
+  char ipAddress[50];
   PROGRAM_DAY day[MAX_DAY];
 };
 
