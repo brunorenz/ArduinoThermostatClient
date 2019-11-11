@@ -25,6 +25,7 @@
  */
 #define TERM_SERVER_MQ "192.168.0.120"
 #define TOPIC_WIFI "ThermApp/wifiRegister"
+#define TOPIC_MONITOR "ThermApp/monitoData"
 #define TOPIC_LASTWILL "ThermApp/lastWill"
 #define TOPIC_GETPROG "ThermApp/getProgramming"
 #define TOPIC_UPDATEPROG "ThermApp/updateProgramming"

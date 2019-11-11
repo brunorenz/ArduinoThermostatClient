@@ -2,8 +2,6 @@
   TermClient main module
 */
 
-//#include <avr/io.h>
-//#include <avr/wdt.h>
 #include <Adafruit_SleepyDog.h>
 #include "TermClient.h"
 #include "HttpConnection.h"
@@ -21,21 +19,11 @@
 #include <ArduinoJson.h>
 #include <ArduinoMqttClient.h>
 #include <Adafruit_Sensor.h>
-#include <Adafruit_BMP280.h>
-#include <Adafruit_BME280.h>
 
 int status = WL_IDLE_STATUS; // the WiFi radio's status
 boolean LCD = false;
 boolean BMP280 = false;
 char temp[250];
-
-Logging logger;
-RTCZero rtc;
-
-WiFiConnection wifi;
-WiFiClient wifiClient;
-MqttClient mqttClient(wifiClient);
-MessageParser messageParser;
 
 ThermManager tm;
 #ifdef USE_MQ
@@ -49,11 +37,21 @@ LiquidCrystal_I2C lcd(ADDRESS_LCD, 20, 4);
 
 // Temperature Sensor
 #ifdef BMP
+#include <Adafruit_BMP280.h>
 Adafruit_BMP280 bme;
 #endif
 #ifdef BME
+#include <Adafruit_BME280.h>
 Adafruit_BME280 bme;
 #endif
+
+Logging logger;
+RTCZero rtc;
+
+WiFiConnection wifi;
+WiFiClient wifiClient;
+MqttClient mqttClient(wifiClient);
+MessageParser messageParser;
 
 bool checkI2CAddress(int address);
 void readTemperature(boolean init);
@@ -235,7 +233,7 @@ bool checkMQConnection()
       // subscribe topic
       int subscribeQos = 1;
       const char topic1[] = TOPIC_UPDATEPROG;
-      mqttClient.subscribe(topic1, subscribeQos);      
+      mqttClient.subscribe(topic1, subscribeQos);
       const char topic2[] = TOPIC_UPDATETEMP;
       mqttClient.subscribe(topic2, subscribeQos);
     }
@@ -247,6 +245,7 @@ void loopMQ()
 {
   long now = millis();
   bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
+  bool checkSendMonitorData = (now - timeoutCallMonitor) > WAIT_CALL_MONITOR;
 
   bool wifiConnectionAvailable = checkWIFIConnection();
   if (wifiConnectionAvailable)
@@ -259,6 +258,10 @@ void loopMQ()
       {
         sendWiFiRegisterMessage(config);
       }
+      if (checkSendMonitorData)
+      {
+        sendMonitorData(config);
+      }
     }
   }
   // read sensor data
@@ -267,6 +270,29 @@ void loopMQ()
     readTemperature(false);
     timeoutReadTemperature = now;
   }
+
+#ifdef FLAGRELETEMP
+  if (checkReleTemperature)
+  {
+    int currentStatus = config.clientStatus;
+    bool on = false;
+
+    if (configurationAvailable)
+      on = checkThermostatStatus(sensorData.currentTemperature, &config, wifiConnectionAvailable);
+    config.clientStatus = on ? STATUS_ON : STATUS_OFF;
+    if (on)
+      digitalWrite(relayPin, LOW);
+    else
+      digitalWrite(relayPin, HIGH);
+    if (config.clientStatus != currentStatus)
+    {
+      // force call monitor to update server status
+      sendMonitorData = true;
+    }
+    timeoutSetTemperatureRele = now;
+  }
+#endif
+
   logger.printlnLog("Check FreeMemory %d", freeMemory());
   mqttClient.poll();
   delay(WAIT_MAIN_LOOP);
@@ -279,7 +305,9 @@ void loopMQ()
   // if (config not found  getConnection)
   // subscribe (updatePrograming and updateThemperature)
 }
-
+/**
+ * Send Will message
+ **/
 void sendWillMessage()
 {
   // set a will message, used by the broker when the connection dies unexpectantly
@@ -297,24 +325,54 @@ void sendWillMessage()
   willSent = 1;
 }
 
+void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
+{
+  DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
+  bool send = messageParser.preparaWiFiRegisterRequest(cfg, sensor, jsonBuffer);
+  if (send)
+  {
+    int jsonMessageLen = measureJson(jsonBuffer);
+    char jsonMessage[jsonMessageLen + 1];
+    serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
+    char outTopic[] = TOPIC_MONITOR;
+    publishMessage(jsonMessage, outTopic);
+  }
+}
+
+/**
+ * Send WiFi register message
+ * 
+ */
 void sendWiFiRegisterMessage(CONFIG &cfg)
 {
   DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
   messageParser.preparaWiFiRegisterRequest(cfg, jsonBuffer);
   int jsonMessageLen = measureJson(jsonBuffer);
-  char jsonMessage[jsonMessageLen+1];
+  char jsonMessage[jsonMessageLen + 1];
   serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
-  logger.printlnLog("Send WiFiRegister message %s (%d - %d)", jsonMessage,jsonMessageLen,strlen(jsonMessage));
+
+  //     logger.printlnLog("Send WiFiRegister message %s (%d - %d)", jsonMessage, jsonMessageLen, strlen(jsonMessage));
+  // bool retained = false;
+  // int qos = 1;
+  // bool dup = false;
+  char outTopic[] = TOPIC_WIFI;
+  publishMessage(jsonMessage, outTopic);
+  // mqttClient.beginMessage(outTopic, strlen(jsonMessage), retained, qos, dup);
+  // mqttClient.print(jsonMessage);
+  // mqttClient.endMessage();
+  cfg.registered = 1;
+  logger.printlnLog("Send WiFiRegister done!");
+}
+
+void publishMessage(char *message, char *topic)
+{
+  logger.printlnLog("Send message %s (%d) to Topic %s", message, strlen(message), topic);
   bool retained = false;
   int qos = 1;
   bool dup = false;
-  char outTopic[] = TOPIC_WIFI;
-  
-  mqttClient.beginMessage(outTopic, strlen(jsonMessage), retained, qos, dup);
-  mqttClient.print(jsonMessage);
+  mqttClient.beginMessage(topic, strlen(message), retained, qos, dup);
+  mqttClient.print(message);
   mqttClient.endMessage();
-  cfg.registered = 1;
-  logger.printlnLog("Send WiFiRegister done!");
 }
 
 void loopREST()
@@ -547,7 +605,7 @@ void readTemperature(boolean init)
     sensorData.humidity += u;
 #endif
     sensorData.currentTemperature = sensorData.totalTemperature / sensorData.numItem;
-    if (false)
+    if (true)
       logger.printlnLog(
           "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
           t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
@@ -656,14 +714,15 @@ void onMqttMessage(int messageSize)
     char message[messageSize];
     mqttClient.read((uint8_t *)message, messageSize);
     logger.printlnLog("Letto da Topic %s messaggio %s", messageTopic, message);
-    messageParser.updateConfigurationResponse(config,message);
-  } else if (strcmp(messageTopic, TOPIC_UPDATETEMP) == 0)
+    messageParser.updateConfigurationResponse(config, message);
+  }
+  else if (strcmp(messageTopic, TOPIC_UPDATETEMP) == 0)
   {
-    char message[messageSize];    
+    char message[messageSize];
     mqttClient.read((uint8_t *)message, messageSize);
     logger.printlnLog("Letto da Topic %s messaggio %s", messageTopic, message);
-    
-  } else
+  }
+  else
   {
     logger.printlnLog("Letto da Topic %s messaggio non implementato", messageTopic);
   }
