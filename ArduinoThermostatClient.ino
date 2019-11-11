@@ -234,8 +234,10 @@ bool checkMQConnection()
       mqttClient.onMessage(onMqttMessage);
       // subscribe topic
       int subscribeQos = 1;
-      const char topic[] = TOPIC_UPDATEPROG;
-      mqttClient.subscribe(topic, subscribeQos);
+      const char topic1[] = TOPIC_UPDATEPROG;
+      mqttClient.subscribe(topic1, subscribeQos);      
+      const char topic2[] = TOPIC_UPDATETEMP;
+      mqttClient.subscribe(topic2, subscribeQos);
     }
   }
   return rc == 1;
@@ -300,15 +302,19 @@ void sendWiFiRegisterMessage(CONFIG &cfg)
   DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
   messageParser.preparaWiFiRegisterRequest(cfg, jsonBuffer);
   int jsonMessageLen = measureJson(jsonBuffer);
-  char jsonMessage[jsonMessageLen];
-  serializeJson(jsonBuffer, jsonMessage, jsonMessageLen);
+  char jsonMessage[jsonMessageLen+1];
+  serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
+  logger.printlnLog("Send WiFiRegister message %s (%d - %d)", jsonMessage,jsonMessageLen,strlen(jsonMessage));
   bool retained = false;
   int qos = 1;
   bool dup = false;
   char outTopic[] = TOPIC_WIFI;
-  mqttClient.beginMessage(outTopic, jsonMessageLen.length(), retained, qos, dup);
+  
+  mqttClient.beginMessage(outTopic, strlen(jsonMessage), retained, qos, dup);
   mqttClient.print(jsonMessage);
   mqttClient.endMessage();
+  cfg.registered = 1;
+  logger.printlnLog("Send WiFiRegister done!");
 }
 
 void loopREST()
@@ -644,11 +650,21 @@ void onMqttMessage(int messageSize)
 
   char messageTopic[100];
   strcpy(messageTopic, mqttClient.messageTopic().c_str());
-  if (strcmp(messageTopic, TOPIC_UPDATEPROG))
+  if (strcmp(messageTopic, TOPIC_UPDATEPROG) == 0)
   {
     // process update configuration
     char message[messageSize];
     mqttClient.read((uint8_t *)message, messageSize);
     logger.printlnLog("Letto da Topic %s messaggio %s", messageTopic, message);
+    messageParser.updateConfigurationResponse(config,message);
+  } else if (strcmp(messageTopic, TOPIC_UPDATETEMP) == 0)
+  {
+    char message[messageSize];    
+    mqttClient.read((uint8_t *)message, messageSize);
+    logger.printlnLog("Letto da Topic %s messaggio %s", messageTopic, message);
+    
+  } else
+  {
+    logger.printlnLog("Letto da Topic %s messaggio non implementato", messageTopic);
   }
 }

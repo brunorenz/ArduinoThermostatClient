@@ -15,9 +15,11 @@ class MessageParser
 public:
   MessageParser();
   void preparaWiFiRegisterRequest(CONFIG &config, DynamicJsonDocument &root);
+  void updateConfigurationResponse(CONFIG &config,char *message);
 
 private:
   int checkRestError(DynamicJsonDocument &doc);
+  bool deserialize(DynamicJsonDocument &doc, char * message);
   RTCZero *rtc;
   Logging logger;
 };
