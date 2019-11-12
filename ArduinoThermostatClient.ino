@@ -57,7 +57,7 @@ bool checkI2CAddress(int address);
 void readTemperature(boolean init);
 float getManagedTemperature(int pryDisp, CONFIG *conf);
 bool checkConfiguration(CONFIG *conf, bool connectionAvailable);
-bool checkThermostatStatus(float cT, CONFIG *conf, boolean connectionAvailable);
+bool checkThermostatStatus(float cT, CONFIG &conf, boolean connectionAvailable);
 void loopREST();
 
 long timeoutCallMonitor;
@@ -282,8 +282,7 @@ void loopMQ()
     int currentStatus = config.clientStatus;
     bool on = false;
 
-    //    if (configurationAvailable)
-    //      on = checkThermostatStatus(sensorData.currentTemperature, &config, wifiConnectionAvailable);
+    on = checkThermostatStatus(sensorData.currentTemperature, config, wifiConnectionAvailable);
     config.clientStatus = on ? STATUS_ON : STATUS_OFF;
     if (on)
       digitalWrite(relayPin, LOW);
@@ -465,7 +464,7 @@ void loopREST()
 /**
   Recupera record di programmazione corrente in base a giorno / ora
 */
-void getCurrentProgrammingRecord(PROG_TIME *progRecord, CONFIG *conf)
+void getCurrentProgrammingRecord(PROG_TIME &progRecord, CONFIG &conf)
 {
   // get current day and time
   time_t t = tm.getWiFiTime(); //hc.getTime() + ONE_HOUR;
@@ -478,32 +477,32 @@ void getCurrentProgrammingRecord(PROG_TIME *progRecord, CONFIG *conf)
   int day = timeinfo->tm_wday - 1;
   if (day < 0)
     day = 6;
-  progRecord->minTemp = conf->minTemp;
-  progRecord->priorityDisp = 0;
-  for (int i = 0; i < conf->day[day].numProg; i++)
+  progRecord.minTemp = conf.minTemp;
+  progRecord.priorityDisp = 0;
+  for (int i = 0; i < conf.day[day].numProg; i++)
   {
-    int ts = conf->day[day].prog[i].timeStart;
-    int te = conf->day[day].prog[i].timeEnd;
+    int ts = conf.day[day].prog[i].timeStart;
+    int te = conf.day[day].prog[i].timeEnd;
     if (ts <= tnow && tnow <= te)
     {
-      progRecord->minTemp = conf->day[day].prog[i].minTemp;
-      progRecord->priorityDisp = conf->day[day].prog[i].priorityDisp;
+      progRecord.minTemp = conf.day[day].prog[i].minTemp;
+      progRecord.priorityDisp = conf.day[day].prog[i].priorityDisp;
       break;
     }
   }
   logger.printlnLog("Day %d - Time %d -> Programming Temp %f - IdDispPry %d", day,
-                    tnow, progRecord->minTemp, progRecord->priorityDisp);
+                    tnow, progRecord.minTemp, progRecord.priorityDisp);
 }
 
 /**
    Verifica temperatura ed in funzione di programmazione determina se accendere o meno
 */
-bool checkThermostatStatus(float cT, CONFIG *conf, boolean connectionAvailable)
+bool checkThermostatStatus(float cT, CONFIG &conf, boolean connectionAvailable)
 {
   bool on = false;
   float tempToCheck = 0;
   float managedTemp = 0;
-  switch (conf->serverStatus)
+  switch (conf.serverStatus)
   {
   case STATUS_ON:
     on = true;
@@ -512,15 +511,15 @@ bool checkThermostatStatus(float cT, CONFIG *conf, boolean connectionAvailable)
     on = false;
     break;
   case STATUS_MANUAL:
-    tempToCheck = conf->minTempManual;
+    tempToCheck = conf.minTempManual;
     break;
   case STATUS_AUTO:
     PROG_TIME progRecord;
     // recupera record di programmazione temperatura
-    getCurrentProgrammingRecord(&progRecord, conf);
+    getCurrentProgrammingRecord(progRecord, conf);
     tempToCheck = progRecord.minTemp;
     // recupera temperatura
-    if (connectionAvailable)
+    if (false)
     {
       managedTemp = getManagedTemperature(progRecord.priorityDisp, conf);
       if (managedTemp > 0)
@@ -535,17 +534,17 @@ bool checkThermostatStatus(float cT, CONFIG *conf, boolean connectionAvailable)
   if (tempToCheck > 0)
     on = cT < tempToCheck;
   logger.printlnLog("Current Temp %f - Temp to Check %f - Status %d : ON = %d",
-                    cT, tempToCheck, conf->serverStatus, on);
+                    cT, tempToCheck, conf.serverStatus, on);
   return on;
 }
 /**
    Retrive managed temperature according curent programming and status
 */
-float getManagedTemperature(int pryDisp, CONFIG *conf)
+float getManagedTemperature(int pryDisp, CONFIG &conf)
 {
   // se priorità dispositivo = Default uso dispositivo locale
   if (pryDisp == 0)
-    pryDisp = conf->key;
+    pryDisp = conf.key;
   float tempToCheck = 0.0;
   TEMPDATA tdata;
   tm.getCurrentData(&tdata);
@@ -568,7 +567,7 @@ float getManagedTemperature(int pryDisp, CONFIG *conf)
       break;
     case TEMP_LOCAL:
       for (int i = 0; i < tdata.num; i++)
-        if (tdata.data[i].idDisp == conf->key)
+        if (tdata.data[i].idDisp == conf.key)
         {
           tempToCheck = tdata.data[i].temperature;
           break;
@@ -578,7 +577,7 @@ float getManagedTemperature(int pryDisp, CONFIG *conf)
     }
   }
   else
-    tempToCheck = conf->minTemp;
+    tempToCheck = conf.minTemp;
   return tempToCheck;
 }
 
