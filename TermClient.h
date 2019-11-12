@@ -155,6 +155,7 @@ struct CONFIG
   int serverStatus;
   int clientStatus;
   int tempMeasure;
+  int timeZoneOffset;
   int flagLcd;
   int flagLightSensor;
   int flagMotionSensor;

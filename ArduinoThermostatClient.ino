@@ -106,6 +106,7 @@ void setup()
   config.flagMotionSensor = 0;
   config.flagReleTemp = 0;
   config.flagReleLight = 0;
+  config.timeZoneOffset = -1;
   config.registered = false;
   for (int i = 0; i < MAX_DAY; i++)
   {
@@ -378,7 +379,7 @@ void publishMessage(char *message, char *topic)
   mqttClient.print(message);
   mqttClient.endMessage();
 }
-
+/*
 void loopREST()
 {
   // check connection
@@ -404,7 +405,7 @@ void loopREST()
   /*
     logger.printlnLog("wifi : %d, configAvailable : %d, checkTemperature : %d, checkConfiguration : %d, checkReleTemperature : %d, sendMonitorData :%d",
                     wifiConnectionAvailable, configurationAvailable, checkTemperature, checkConfiguration, checkReleTemperature, sendMonitorData);
-  */
+  *
   // read sensor data
   if (checkTemperature)
   {
@@ -460,7 +461,7 @@ void loopREST()
   logger.printlnLog("Check FreeMemory %d", freeMemory());
   delay(WAIT_MAIN_LOOP);
 }
-
+*/
 /**
   Recupera record di programmazione corrente in base a giorno / ora
 */
@@ -504,32 +505,32 @@ bool checkThermostatStatus(float cT, CONFIG *conf, boolean connectionAvailable)
   float managedTemp = 0;
   switch (conf->serverStatus)
   {
-    case STATUS_ON:
-      on = true;
-      break;
-    case STATUS_OFF:
-      on = false;
-      break;
-    case STATUS_MANUAL:
-      tempToCheck = conf->minTempManual;
-      break;
-    case STATUS_AUTO:
-      PROG_TIME progRecord;
-      // recupera record di programmazione temperatura
-      getCurrentProgrammingRecord(&progRecord, conf);
-      tempToCheck = progRecord.minTemp;
-      // recupera temperatura
-      if (connectionAvailable)
-      {
-        managedTemp = getManagedTemperature(progRecord.priorityDisp, conf);
-        if (managedTemp > 0)
-          cT = managedTemp;
-      }
-      break;
+  case STATUS_ON:
+    on = true;
+    break;
+  case STATUS_OFF:
+    on = false;
+    break;
+  case STATUS_MANUAL:
+    tempToCheck = conf->minTempManual;
+    break;
+  case STATUS_AUTO:
+    PROG_TIME progRecord;
+    // recupera record di programmazione temperatura
+    getCurrentProgrammingRecord(&progRecord, conf);
+    tempToCheck = progRecord.minTemp;
+    // recupera temperatura
+    if (connectionAvailable)
+    {
+      managedTemp = getManagedTemperature(progRecord.priorityDisp, conf);
+      if (managedTemp > 0)
+        cT = managedTemp;
+    }
+    break;
 
-    default:
-      on = false;
-      break;
+  default:
+    on = false;
+    break;
   }
   if (tempToCheck > 0)
     on = cT < tempToCheck;
@@ -552,28 +553,28 @@ float getManagedTemperature(int pryDisp, CONFIG *conf)
   {
     switch (tdata.tempMeasure)
     {
-      case TEMP_AVARAGE:
-        for (int i = 0; i < tdata.num; i++)
-          tempToCheck += tdata.data[i].temperature;
-        tempToCheck = tempToCheck / (float)tdata.num;
-        break;
-      case TEMP_PRIORITY:
-        for (int i = 0; i < tdata.num; i++)
-          if (tdata.data[i].idDisp == pryDisp)
-          {
-            tempToCheck = tdata.data[i].temperature;
-            break;
-          }
-        break;
-      case TEMP_LOCAL:
-        for (int i = 0; i < tdata.num; i++)
-          if (tdata.data[i].idDisp == conf->key)
-          {
-            tempToCheck = tdata.data[i].temperature;
-            break;
-          }
-      default:
-        break;
+    case TEMP_AVARAGE:
+      for (int i = 0; i < tdata.num; i++)
+        tempToCheck += tdata.data[i].temperature;
+      tempToCheck = tempToCheck / (float)tdata.num;
+      break;
+    case TEMP_PRIORITY:
+      for (int i = 0; i < tdata.num; i++)
+        if (tdata.data[i].idDisp == pryDisp)
+        {
+          tempToCheck = tdata.data[i].temperature;
+          break;
+        }
+      break;
+    case TEMP_LOCAL:
+      for (int i = 0; i < tdata.num; i++)
+        if (tdata.data[i].idDisp == conf->key)
+        {
+          tempToCheck = tdata.data[i].temperature;
+          break;
+        }
+    default:
+      break;
     }
   }
   else
@@ -611,8 +612,8 @@ void readTemperature(boolean init)
     sensorData.currentTemperature = sensorData.totalTemperature / sensorData.numItem;
     if (true)
       logger.printlnLog(
-        "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
-        t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
+          "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
+          t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
   }
 }
 /*
@@ -719,6 +720,12 @@ void onMqttMessage(int messageSize)
     mqttClient.read((uint8_t *)message, messageSize);
     logger.printlnLog("Letto da Topic %s messaggio %s", messageTopic, message);
     messageParser.updateConfigurationResponse(config, message);
+    unsigned long now = wifi.getTime();
+    if (now > 0)
+    {
+      now -= config.timeZoneOffset * 60;
+      rtc.setEpoch(now);
+    }
   }
   else if (strcmp(messageTopic, TOPIC_UPDATETEMP) == 0)
   {

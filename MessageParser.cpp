@@ -35,12 +35,11 @@ void MessageParser::updateConfigurationResponse(CONFIG &conf, char *response)
       {
         JsonObject configuration = data["configuration"];
         conf.tempMeasure = configuration["tempMeasure"];
-        conf.serverStatus = configuration["status"];
-        //conf.lastUpdate = convertTime(configuration["lastUpdate"]);
+        conf.serverStatus = configuration["statusThermostat"];
+        conf.timeZoneOffset = configuration["timeZoneOffset"];
         logger.printlnLog(
-            "CheckUpdate : TempMeasure %d , Status %d , LastUpdate : %lu",
-            conf.tempMeasure, conf.serverStatus,
-            conf.lastUpdate);
+            "CheckUpdate : TempMeasure %d , statusThermostat %d , timeZoneOffset %d",
+            conf.tempMeasure, conf.serverStatus, conf.timeZoneOffset);
         //TODO manage missing configuration
         JsonObject currentTempProgram =
             data["currentTempProgram"];

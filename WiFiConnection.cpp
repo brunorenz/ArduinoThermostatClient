@@ -2,14 +2,7 @@
 
 WiFiConnection::WiFiConnection()
 {
-  //this->rtc = NULL;
 }
-
-//void WiFiConnection::setRTC(RTCZero *rtc)
-//{
-  //this->rtc = rtc;
-  //logger.setRTC(this->rtc);
-//}
 
 void WiFiConnection::updateRTC(RTCZero &rtc, int timeZoneOffset)
 {
@@ -77,7 +70,6 @@ void WiFiConnection::disconnect()
 
 unsigned long WiFiConnection::getTime()
 {
-  //char temp[80];
   unsigned long epoch;
   int numberOfTries = 0, maxTries = 6;
   do
@@ -85,10 +77,6 @@ unsigned long WiFiConnection::getTime()
     epoch = WiFi.getTime();
     numberOfTries++;
   } while ((epoch == 0) && (numberOfTries < maxTries));
-  // if (epoch == 0)
-  // {
-  //   logger.printlnLog(temp, "Server NTP unreachable!!");
-  // }
   return epoch;
 }
 
