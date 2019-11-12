@@ -76,8 +76,8 @@ bool willSent = 0;
 uint8_t bell[8] = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
 
 /**
- * Reset function
- */
+   Reset function
+*/
 
 void (*resetFunc)(void) = 0; //declare reset function at address 0
 
@@ -192,8 +192,8 @@ void loop()
 #endif
 }
 /**
- * Check and Manage WiFi connection
- */
+   Check and Manage WiFi connection
+*/
 bool checkWIFIConnection()
 {
   bool rc = wifi.connect();
@@ -208,8 +208,8 @@ bool checkWIFIConnection()
   return rc;
 }
 /**
- * Check and Manage MQTT Connection 
- */
+   Check and Manage MQTT Connection
+*/
 bool checkMQConnection()
 {
   int rc = 1;
@@ -246,6 +246,7 @@ void loopMQ()
   long now = millis();
   bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
   bool checkSendMonitorData = (now - timeoutCallMonitor) > WAIT_CALL_MONITOR;
+  bool checkReleTemperature = (now - timeoutSetTemperatureRele) > WAIT_SETRELE_TEMPERATURE;
 
   bool wifiConnectionAvailable = checkWIFIConnection();
   if (wifiConnectionAvailable)
@@ -260,7 +261,10 @@ void loopMQ()
       }
       if (checkSendMonitorData)
       {
-        sendMonitorData(config);
+        sendMonitorData(config, sensorData);
+        // reset temp
+        readTemperature(true);
+        timeoutCallMonitor = now;
       }
     }
   }
@@ -277,8 +281,8 @@ void loopMQ()
     int currentStatus = config.clientStatus;
     bool on = false;
 
-    if (configurationAvailable)
-      on = checkThermostatStatus(sensorData.currentTemperature, &config, wifiConnectionAvailable);
+    //    if (configurationAvailable)
+    //      on = checkThermostatStatus(sensorData.currentTemperature, &config, wifiConnectionAvailable);
     config.clientStatus = on ? STATUS_ON : STATUS_OFF;
     if (on)
       digitalWrite(relayPin, LOW);
@@ -287,7 +291,7 @@ void loopMQ()
     if (config.clientStatus != currentStatus)
     {
       // force call monitor to update server status
-      sendMonitorData = true;
+      checkSendMonitorData = true;
     }
     timeoutSetTemperatureRele = now;
   }
@@ -306,7 +310,7 @@ void loopMQ()
   // subscribe (updatePrograming and updateThemperature)
 }
 /**
- * Send Will message
+   Send Will message
  **/
 void sendWillMessage()
 {
@@ -328,7 +332,7 @@ void sendWillMessage()
 void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
 {
   DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
-  bool send = messageParser.preparaWiFiRegisterRequest(cfg, sensor, jsonBuffer);
+  bool send = messageParser.preparaMonitorDataRequest(cfg, sensor, jsonBuffer);
   if (send)
   {
     int jsonMessageLen = measureJson(jsonBuffer);
@@ -340,9 +344,9 @@ void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
 }
 
 /**
- * Send WiFi register message
- * 
- */
+   Send WiFi register message
+
+*/
 void sendWiFiRegisterMessage(CONFIG &cfg)
 {
   DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
@@ -500,32 +504,32 @@ bool checkThermostatStatus(float cT, CONFIG *conf, boolean connectionAvailable)
   float managedTemp = 0;
   switch (conf->serverStatus)
   {
-  case STATUS_ON:
-    on = true;
-    break;
-  case STATUS_OFF:
-    on = false;
-    break;
-  case STATUS_MANUAL:
-    tempToCheck = conf->minTempManual;
-    break;
-  case STATUS_AUTO:
-    PROG_TIME progRecord;
-    // recupera record di programmazione temperatura
-    getCurrentProgrammingRecord(&progRecord, conf);
-    tempToCheck = progRecord.minTemp;
-    // recupera temperatura
-    if (connectionAvailable)
-    {
-      managedTemp = getManagedTemperature(progRecord.priorityDisp, conf);
-      if (managedTemp > 0)
-        cT = managedTemp;
-    }
-    break;
+    case STATUS_ON:
+      on = true;
+      break;
+    case STATUS_OFF:
+      on = false;
+      break;
+    case STATUS_MANUAL:
+      tempToCheck = conf->minTempManual;
+      break;
+    case STATUS_AUTO:
+      PROG_TIME progRecord;
+      // recupera record di programmazione temperatura
+      getCurrentProgrammingRecord(&progRecord, conf);
+      tempToCheck = progRecord.minTemp;
+      // recupera temperatura
+      if (connectionAvailable)
+      {
+        managedTemp = getManagedTemperature(progRecord.priorityDisp, conf);
+        if (managedTemp > 0)
+          cT = managedTemp;
+      }
+      break;
 
-  default:
-    on = false;
-    break;
+    default:
+      on = false;
+      break;
   }
   if (tempToCheck > 0)
     on = cT < tempToCheck;
@@ -548,28 +552,28 @@ float getManagedTemperature(int pryDisp, CONFIG *conf)
   {
     switch (tdata.tempMeasure)
     {
-    case TEMP_AVARAGE:
-      for (int i = 0; i < tdata.num; i++)
-        tempToCheck += tdata.data[i].temperature;
-      tempToCheck = tempToCheck / (float)tdata.num;
-      break;
-    case TEMP_PRIORITY:
-      for (int i = 0; i < tdata.num; i++)
-        if (tdata.data[i].idDisp == pryDisp)
-        {
-          tempToCheck = tdata.data[i].temperature;
-          break;
-        }
-      break;
-    case TEMP_LOCAL:
-      for (int i = 0; i < tdata.num; i++)
-        if (tdata.data[i].idDisp == conf->key)
-        {
-          tempToCheck = tdata.data[i].temperature;
-          break;
-        }
-    default:
-      break;
+      case TEMP_AVARAGE:
+        for (int i = 0; i < tdata.num; i++)
+          tempToCheck += tdata.data[i].temperature;
+        tempToCheck = tempToCheck / (float)tdata.num;
+        break;
+      case TEMP_PRIORITY:
+        for (int i = 0; i < tdata.num; i++)
+          if (tdata.data[i].idDisp == pryDisp)
+          {
+            tempToCheck = tdata.data[i].temperature;
+            break;
+          }
+        break;
+      case TEMP_LOCAL:
+        for (int i = 0; i < tdata.num; i++)
+          if (tdata.data[i].idDisp == conf->key)
+          {
+            tempToCheck = tdata.data[i].temperature;
+            break;
+          }
+      default:
+        break;
     }
   }
   else
@@ -607,8 +611,8 @@ void readTemperature(boolean init)
     sensorData.currentTemperature = sensorData.totalTemperature / sensorData.numItem;
     if (true)
       logger.printlnLog(
-          "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
-          t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
+        "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
+        t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
   }
 }
 /*
