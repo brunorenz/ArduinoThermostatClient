@@ -135,6 +135,9 @@ void MessageParser::preparaWiFiRegisterRequest(CONFIG &config, DynamicJsonDocume
   jsonBuffer["flagLcd"] = config.flagLcd;
   jsonBuffer["flagLightSensor"] = config.flagLightSensor;
   jsonBuffer["flagMotionSensor"] = config.flagMotionSensor;
+  jsonBuffer["flagTemperatureSensor"] = config.flagTemperatureSensor;
+  jsonBuffer["flagPressureSensor"] = config.flagPressureSensor;
+  jsonBuffer["flagHumiditySensor"] = config.flagHumiditySensor;
   jsonBuffer["flagReleTemp"] = config.flagReleTemp;
   jsonBuffer["flagReleLight"] = config.flagReleLight;
   jsonBuffer["macAddress"] = config.macAddress;

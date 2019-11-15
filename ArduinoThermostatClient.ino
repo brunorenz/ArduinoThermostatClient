@@ -106,6 +106,9 @@ void setup()
   config.flagMotionSensor = 0;
   config.flagReleTemp = 0;
   config.flagReleLight = 0;
+  config.flagTemperatureSensor = 0;
+  config.flagPressureSensor = 0;
+  config.flagHumiditySensor = 0;
   config.timeZoneOffset = -1;
   config.registered = false;
   for (int i = 0; i < MAX_DAY; i++)
@@ -129,6 +132,18 @@ void setup()
   config.flagReleTemp = 1;
 #endif
 
+#ifdef BMP
+  config.flagTemperatureSensor = 1;
+  config.flagPressureSensor = 1;
+  config.flagHumiditySensor = 0;
+#endif
+
+#ifdef BME
+  config.flagTemperatureSensor = 1;
+  config.flagPressureSensor = 1;
+  config.flagHumiditySensor = 1;
+#endif
+  
   // initialize I2C comunication
   Wire.begin();
   // Initialize rtc

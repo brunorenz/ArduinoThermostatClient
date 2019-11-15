@@ -13,7 +13,7 @@
 //int TERM_SERVER_PORT = 8100;
 
 #define ONE_HOUR 3600
-#define TERM_SERVER_URL_REMOTE "192.168.0.119"
+#define TERM_SERVER_URL_REMOTE "192.168.0.120"
 #define TERM_SERVER_URL_LOCAL "192.168.0.107"
 #ifdef LOCAL
 #define TERM_SERVER_URL TERM_SERVER_URL_LOCAL
@@ -32,7 +32,7 @@
 #define TOPIC_UPDATETEMP "ThermApp/updateThemperature"
 
 //#define TERM_SERVER_URL_REMOTE       "51.68.197.97"
-#define TERM_SERVER_PORT 8100
+#define TERM_SERVER_PORT 8101
 
 #define SECRET_SSID "BRHome"
 #define SECRET_PASS "ba192hbA:ah060vyA"
@@ -159,6 +159,9 @@ struct CONFIG
   int flagLcd;
   int flagLightSensor;
   int flagMotionSensor;
+  int flagTemperatureSensor;
+  int flagPressureSensor;
+  int flagHumiditySensor;
   int flagReleTemp;
   int flagReleLight;
   bool progLoaded;
