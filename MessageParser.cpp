@@ -115,7 +115,7 @@ bool MessageParser::preparaMonitorDataRequest(CONFIG &config, SENSORDATA &sensor
     jsonBuffer["pressure"] = sensorData.totalPressure / sensorData.numItem / 100.0;
     jsonBuffer["light"] = sensorData.totalLight / sensorData.numItem;
     jsonBuffer["humidity"] = sensorData.humidity / sensorData.numItem;
-    jsonBuffer["status"] = config.clientStatus;
+    jsonBuffer["statusThermostat"] = config.clientStatus;
     jsonBuffer["numSurveys"] = sensorData.numItem;
     send = true;
   }
