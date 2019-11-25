@@ -284,6 +284,22 @@ void loopMQ()
       }
     }
   }
+  if (wifiConnectionAvailable)
+  {
+    wifi.updateRTC(rtc,config.timeZoneOffset);
+    /*
+    unsigned long now = wifi.getTime();
+    if (now > 0)
+    {
+      now -= config.timeZoneOffset * 60;
+      rtc.setEpoch(now);
+    }
+    logger.printlnLog("Time %d - offset %d",now,config.timeZoneOffset);
+    */
+  }
+
+
+  
   // read sensor data
   if (checkTemperature)
   {
@@ -344,7 +360,25 @@ void sendWillMessage()
   willSent = 1;
 }
 
-void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
+
+//{"macAddress":"F8:F0:05:F7:DC:49","temperature":20.79833,"pressure":1013.37,"light":53.09245,"humidity":65.03451,"statusThermostat":0,"numSurveys":6}
+
+void sendMonitorDataString(CONFIG &cfg, SENSORDATA &sensor)
+{
+  //"{\"macAddress\":\"%s\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":%d,\"numSurveys\":%d}"
+  DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
+  bool send = messageParser.preparaMonitorDataRequest(cfg, sensor, jsonBuffer);
+  if (send)
+  {
+    int jsonMessageLen = measureJson(jsonBuffer);
+    char jsonMessage[jsonMessageLen + 1];
+    serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
+    char outTopic[] = TOPIC_MONITOR;
+    publishMessage(jsonMessage, outTopic);
+  }
+}
+
+void sendMonitorDataJSON(CONFIG &cfg, SENSORDATA &sensor)
 {
   DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
   bool send = messageParser.preparaMonitorDataRequest(cfg, sensor, jsonBuffer);
@@ -356,6 +390,16 @@ void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
     char outTopic[] = TOPIC_MONITOR;
     publishMessage(jsonMessage, outTopic);
   }
+}
+
+void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
+{
+  
+    char jsonMessage[] = "{\"macAddress\":\"F8:F0:05:F7:DC:49\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":0,\"numSurveys\":0}";
+    //serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
+    char outTopic[] = TOPIC_MONITOR;
+    publishMessage(jsonMessage, outTopic);
+  
 }
 
 /**
@@ -730,21 +774,25 @@ void onMqttMessage(int messageSize)
   if (strcmp(messageTopic, TOPIC_UPDATEPROG) == 0)
   {
     // process update configuration
-    char message[messageSize];
+    char message[messageSize+1];
     mqttClient.read((uint8_t *)message, messageSize);
+    message[messageSize] = 0;
     logger.printlnLog("Letto da Topic %s messaggio %s", messageTopic, message);
     messageParser.updateConfigurationResponse(config, message);
+    wifi.updateRTC(rtc,config.timeZoneOffset);
+    /*
     unsigned long now = wifi.getTime();
     if (now > 0)
     {
       now -= config.timeZoneOffset * 60;
       rtc.setEpoch(now);
-    }
+    }*/
   }
   else if (strcmp(messageTopic, TOPIC_UPDATETEMP) == 0)
   {
-    char message[messageSize];
+    char message[messageSize+1];
     mqttClient.read((uint8_t *)message, messageSize);
+    message[messageSize] = 0;
     logger.printlnLog("Letto da Topic %s messaggio %s", messageTopic, message);
   }
   else
