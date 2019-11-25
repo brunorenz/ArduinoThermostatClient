@@ -14,7 +14,7 @@ class Logging
 public:
   Logging();
   Logging(RTCZero *rtc);
-  template <class... Args>
+  //template <class... Args>
   //void printLog(const char *format, Args... args);
   //  template<class ...Args>
   void printLog(const char *format, ...);
