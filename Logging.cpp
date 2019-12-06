@@ -44,8 +44,7 @@ void Logging::printLog(const char *format, ...)
 #endif
       va_list args;
       va_start(args, format);
-
-      vsprintf(printBuffer, format, args);
+      vsnprintf(printBuffer, LOG_BUFFER_SIZE, format, args);
       va_end(args);
       if (__rtc != NULL)
       {

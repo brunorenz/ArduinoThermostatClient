@@ -2,21 +2,18 @@
 #define Logging_h
 
 #include "TermClient.h"
-#include <Arduino.h>
+//#include <Arduino.h>
 #include <stdarg.h>
 #include <RTCZero.h>
 #include <time.h>
 
 #define LOG_BUFFER_SIZE 300
-#define MALLOC
+#define MALLOC_
 class Logging
 {
 public:
   Logging();
   Logging(RTCZero *rtc);
-  //template <class... Args>
-  //void printLog(const char *format, Args... args);
-  //  template<class ...Args>
   void printLog(const char *format, ...);
   void printlnLog(const char *format, ...);
   void setRTC(RTCZero *rtc);
@@ -24,6 +21,7 @@ public:
 
 private:
   //void printLog(const char *format, boolean nl , ...);
+  //void printLog(bool nl, const char *format, va_list &args);
   bool available = false;
   RTCZero *__rtc;
   void formatData(char *buffer);

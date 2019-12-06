@@ -79,7 +79,7 @@ uint8_t bell[8] = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
    Reset function
 */
 
-void (*resetFunc)(void) = 0; //declare reset function at address 0
+//void (*resetFunc)(void) = 0; //declare reset function at address 0
 
 int checkServerConnection(WiFiClient &client)
 {
@@ -143,7 +143,7 @@ void setup()
   config.flagPressureSensor = 1;
   config.flagHumiditySensor = 1;
 #endif
-  
+
   // initialize I2C comunication
   Wire.begin();
   // Initialize rtc
@@ -286,7 +286,7 @@ void loopMQ()
   }
   if (wifiConnectionAvailable)
   {
-    wifi.updateRTC(rtc,config.timeZoneOffset);
+    wifi.updateRTC(rtc, config.timeZoneOffset);
     /*
     unsigned long now = wifi.getTime();
     if (now > 0)
@@ -298,8 +298,6 @@ void loopMQ()
     */
   }
 
-
-  
   // read sensor data
   if (checkTemperature)
   {
@@ -360,7 +358,6 @@ void sendWillMessage()
   willSent = 1;
 }
 
-
 //{"macAddress":"F8:F0:05:F7:DC:49","temperature":20.79833,"pressure":1013.37,"light":53.09245,"humidity":65.03451,"statusThermostat":0,"numSurveys":6}
 
 void sendMonitorDataString(CONFIG &cfg, SENSORDATA &sensor)
@@ -394,12 +391,11 @@ void sendMonitorDataJSON(CONFIG &cfg, SENSORDATA &sensor)
 
 void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
 {
-  
-    char jsonMessage[] = "{\"macAddress\":\"F8:F0:05:F7:DC:49\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":0,\"numSurveys\":0}";
-    //serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
-    char outTopic[] = TOPIC_MONITOR;
-    publishMessage(jsonMessage, outTopic);
-  
+
+  char jsonMessage[] = "{\"macAddress\":\"F8:F0:05:F7:DC:49\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":0,\"numSurveys\":0}";
+  //serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
+  char outTopic[] = TOPIC_MONITOR;
+  publishMessage(jsonMessage, outTopic);
 }
 
 /**
@@ -770,16 +766,17 @@ void onMqttMessage(int messageSize)
   Serial.println(" bytes:");
 
   char messageTopic[100];
+  //memcpy(p, payload, length);
   strcpy(messageTopic, mqttClient.messageTopic().c_str());
   if (strcmp(messageTopic, TOPIC_UPDATEPROG) == 0)
   {
     // process update configuration
-    char message[messageSize+1];
+    char message[messageSize + 1];
     mqttClient.read((uint8_t *)message, messageSize);
     message[messageSize] = 0;
     logger.printlnLog("Letto da Topic %s messaggio %s", messageTopic, message);
     messageParser.updateConfigurationResponse(config, message);
-    wifi.updateRTC(rtc,config.timeZoneOffset);
+    wifi.updateRTC(rtc, config.timeZoneOffset);
     /*
     unsigned long now = wifi.getTime();
     if (now > 0)
@@ -790,7 +787,7 @@ void onMqttMessage(int messageSize)
   }
   else if (strcmp(messageTopic, TOPIC_UPDATETEMP) == 0)
   {
-    char message[messageSize+1];
+    char message[messageSize + 1];
     mqttClient.read((uint8_t *)message, messageSize);
     message[messageSize] = 0;
     logger.printlnLog("Letto da Topic %s messaggio %s", messageTopic, message);
