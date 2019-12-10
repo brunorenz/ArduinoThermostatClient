@@ -7,7 +7,7 @@
 #include <RTCZero.h>
 #include <time.h>
 
-#define LOG_BUFFER_SIZE 300
+#define LOG_BUFFER_SIZE 500
 #define MALLOC_
 class Logging
 {
