@@ -395,7 +395,7 @@ void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
   char jsonMessage[] = "{\"macAddress\":\"F8:F0:05:F7:DC:49\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":0,\"numSurveys\":0}";
   //serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
   char outTopic[] = TOPIC_MONITOR;
-  publishMessage(jsonMessage, outTopic);
+  //publishMessage(jsonMessage, outTopic);
 }
 
 /**
