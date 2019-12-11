@@ -1,19 +1,20 @@
 #include "HttpConnection.h"
 
-HttpConnection::HttpConnection()
+/*
+HttpConnection::HttpConnection(Logging *_logger) : WiFiConnection(_logger)
 {
   //  Parent::
   //  this->rtc = NULL;
 }
-
+*/
 bool HttpConnection::deserializeJsonResponse(Client &client, DynamicJsonDocument &doc)
 {
   bool rc = true;
   DeserializationError err; // = NULL;
-  if (logger.isLogEnabled())
+  if (logger->isLogEnabled())
   {
 
-    logger.printLog("JSON : ");
+    logger->printLog("JSON : ");
     ReadLoggingStream loggingStream(client, Serial);
     err = deserializeJson(doc, loggingStream);
   }
@@ -21,10 +22,10 @@ bool HttpConnection::deserializeJsonResponse(Client &client, DynamicJsonDocument
   {
     err = deserializeJson(doc, client);
   }
-  logger.printlnLog("Memory usage : %d", doc.memoryUsage());
+  logger->printlnLog("Memory usage : %d", doc.memoryUsage());
   if (err)
   {
-    logger.printlnLog("parseObject() failed : %s", err.c_str());
+    logger->printlnLog("parseObject() failed : %s", err.c_str());
     rc = false;
   }
   return rc;
@@ -144,7 +145,7 @@ bool HttpConnection::httpGetMethod(Client &client, char *getString)
             getString,
             TERM_SERVER_URL, TERM_SERVER_PORT,
             HTTP_HEADGET);
-    logger.printlnLog("HTTP CALL : %s", httpBuffer);
+    logger->printlnLog("HTTP CALL : %s", httpBuffer);
     client.println(httpBuffer);
     if (waitServerResponse(client))
     {
@@ -180,9 +181,9 @@ bool HttpConnection::httpPostMethod(Client &client, char *postString, DynamicJso
     int len1 = measureJson(doc);
     sprintf(httpBuffer, "POST %s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n%s\r\n\r\n",
             postString, TERM_SERVER_URL, TERM_SERVER_PORT, len1, HTTP_HEADPOST);
-    if (logger.isLogEnabled())
+    if (logger->isLogEnabled())
     {
-      logger.printLog("HTTP REQUEST : ");
+      logger->printLog("HTTP REQUEST : ");
       WriteLoggingStream loggedStream(client, Serial);
       loggedStream.print(httpBuffer);
       serializeJson(doc, loggedStream);
@@ -211,7 +212,7 @@ bool HttpConnection::waitServerResponse(Client &client)
   client.readBytesUntil('\r', status, sizeof(status));
   if (strcmp(status, "HTTP/1.1 200 OK") != 0)
   {
-    logger.printlnLog("Unexpected response: %s", status);
+    logger->printlnLog("Unexpected response: %s", status);
   }
   else
   {
@@ -220,11 +221,11 @@ bool HttpConnection::waitServerResponse(Client &client)
     bool ok = client.find(endOfHeaders);
     if (ok)
     {
-      logger.printlnLog("Received %d bytes..", client.available());
+      logger->printlnLog("Received %d bytes..", client.available());
       return true;
     }
     else
-      logger.printlnLog("No response or invalid response!");
+      logger->printlnLog("No response or invalid response!");
   }
   return rc;
 }
@@ -254,22 +255,22 @@ bool HttpConnection::initServerConnection(Client &client)
   bool rc = false;
   if (client.connected())
   {
-    logger.printlnLog("Connection is available..");
+    logger->printlnLog("Connection is available..");
     rc = true;
   }
   else
   {
-    logger.printlnLog("Connecting to .. %s:%d ..", TERM_SERVER_URL,
+    logger->printlnLog("Connecting to .. %s:%d ..", TERM_SERVER_URL,
                       TERM_SERVER_PORT);
     // if there's a successful connection:
     if (client.connect(TERM_SERVER_URL, TERM_SERVER_PORT))
     {
-      logger.printlnLog("connected ..");
+      logger->printlnLog("connected ..");
       rc = true;
     }
     else
     {
-      logger.printlnLog("connection failed");
+      logger->printlnLog("connection failed");
       reconnect();
     }
   }

@@ -13,7 +13,7 @@
 class MessageParser
 {
 public:
-  MessageParser();
+  MessageParser(Logging *_logger);
   void preparaWiFiRegisterRequest(CONFIG &config, DynamicJsonDocument &root);
   bool preparaMonitorDataRequest(CONFIG &config, SENSORDATA &sensorData, DynamicJsonDocument &root);
   void updateConfigurationResponse(CONFIG &config, char *message);
@@ -21,7 +21,7 @@ public:
 private:
   int checkRestError(DynamicJsonDocument &doc);
   bool deserialize(DynamicJsonDocument &doc, char *message);
-  RTCZero *rtc;
-  Logging logger;
+  //RTCZero *rtc;
+  Logging *logger;
 };
 #endif

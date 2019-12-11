@@ -1,11 +1,8 @@
 #include "MessageParser.h"
 
-MessageParser::MessageParser()
+MessageParser::MessageParser(Logging *_logger)
 {
-  //webSocketBegin = false;
-  //wifiRegisterCount = 0;
-  //checkUpdateCount = 0;
-  //postData.reserve(2000);
+  logger = _logger;
 }
 
 bool MessageParser::deserialize(DynamicJsonDocument &doc, char *message)
@@ -13,10 +10,10 @@ bool MessageParser::deserialize(DynamicJsonDocument &doc, char *message)
   bool rc = true;
 
   DeserializationError err = deserializeJson(doc, message);
-  logger.printlnLog("Memory usage : %d", doc.memoryUsage());
+  logger->printlnLog("Memory usage : %d", doc.memoryUsage());
   if (err)
   {
-    logger.printlnLog("parseObject() failed : %s", err.c_str());
+    logger->printlnLog("parseObject() failed : %s", err.c_str());
     rc = false;
   }
   return rc;
@@ -37,7 +34,7 @@ void MessageParser::updateConfigurationResponse(CONFIG &conf, char *response)
         conf.tempMeasure = configuration["tempMeasure"];
         conf.serverStatus = configuration["statusThermostat"];
         conf.timeZoneOffset = configuration["timeZoneOffset"];
-        logger.printlnLog(
+        logger->printlnLog(
             "CheckUpdate : TempMeasure %d , statusThermostat %d , timeZoneOffset %d",
             conf.tempMeasure, conf.serverStatus, conf.timeZoneOffset);
         //TODO manage missing configuration
@@ -61,7 +58,7 @@ void MessageParser::updateConfigurationResponse(CONFIG &conf, char *response)
             if (numProg > MAX_PROGDAY)
               numProg = MAX_PROGDAY;
             conf.day[idDay].numProg = numProg;
-            logger.printlnLog(
+            logger->printlnLog(
                 "CheckUpdate : Day %d - DefTemp %f - NumProg %d",
                 idDay, conf.minTemp,
                 conf.day[idDay].numProg);
@@ -81,7 +78,7 @@ void MessageParser::updateConfigurationResponse(CONFIG &conf, char *response)
               if (pri == 0)
                 pri = conf.key;
               conf.day[idDay].prog[j].priorityDisp = pri;
-              logger.printlnLog(
+              logger->printlnLog(
                   "CheckUpdate : Prog %d - Temp %f - Start %d - End %d - Priority %d",
                   j, conf.day[idDay].prog[j].minTemp,
                   conf.day[idDay].prog[j].timeStart,
@@ -91,11 +88,11 @@ void MessageParser::updateConfigurationResponse(CONFIG &conf, char *response)
           }
         }
         conf.progLoaded = true;
-        logger.printlnLog("CheckUpdate : Configuration updated");
+        logger->printlnLog("CheckUpdate : Configuration updated");
       }
       else
       {
-        logger.printlnLog("CheckUpdate : Configuration not updated");
+        logger->printlnLog("CheckUpdate : Configuration not updated");
       }
     }
   }
@@ -106,7 +103,7 @@ bool MessageParser::preparaMonitorDataRequest(CONFIG &config, SENSORDATA &sensor
   bool send = false;
   if (sensorData.numItem == 0)
   {
-    logger.printlnLog("Monitor... nothing to send");
+    logger->printlnLog("Monitor... nothing to send");
   }
   else
   {
@@ -124,14 +121,6 @@ bool MessageParser::preparaMonitorDataRequest(CONFIG &config, SENSORDATA &sensor
 
 void MessageParser::preparaWiFiRegisterRequest(CONFIG &config, DynamicJsonDocument &jsonBuffer)
 {
-  //DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
-  /*
-  char macAddress[50];
-  char ipAddress[50];
-  // get IP and MAC address
-  hc->getMacAddress(macAddress);
-  hc->getLocalIp(ipAddress);
-  */
   jsonBuffer["flagLcd"] = config.flagLcd;
   jsonBuffer["flagLightSensor"] = config.flagLightSensor;
   jsonBuffer["flagMotionSensor"] = config.flagMotionSensor;
@@ -149,6 +138,6 @@ int MessageParser::checkRestError(DynamicJsonDocument &doc)
   JsonObject error = doc["error"];
   int rc = error["code"];
   const char *message = error["message"];
-  logger.printlnLog("Return code %d - %s", rc, message);
+  logger->printlnLog("Return code %d - %s", rc, message);
   return rc;
 }

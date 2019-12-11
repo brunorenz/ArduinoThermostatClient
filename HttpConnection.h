@@ -4,18 +4,18 @@
 #define HTTPGETBUFFER 200
 #define ARDUINOJSON_USE_LONG_LONG 1 
 
-#include <WiFi101.h>
+//#include <WiFi101.h>
 #include <ArduinoJson.h>
 #include <StreamUtils.h>
 #include "WiFiConnection.h"
 #include "TermClient.h"
-#include "Logging.h"
-#include <RTCZero.h>
+//#include "Logging.h"
+//#include <RTCZero.h>
 
 class HttpConnection : public WiFiConnection
 {
 public:
-  HttpConnection();
+  HttpConnection(Logging *_logger) : WiFiConnection(_logger){};
   bool initServerConnection(Client &client);
   bool waitServerResponse(Client &client);
   bool httpGetMethod(Client &client, char *getString);

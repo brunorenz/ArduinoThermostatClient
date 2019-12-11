@@ -40,6 +40,7 @@
 #define TERM_ID_CUST 1
 #define TERM_ID_DISP 1
 
+#define SLEEPYDOG_WAIT_TIME 12000
 #define CONNECT_WAIT_TIME 5000
 // LCD
 #define ADDRESS_LCD 0x3f

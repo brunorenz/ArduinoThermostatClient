@@ -25,7 +25,7 @@ boolean LCD = false;
 boolean BMP280 = false;
 char temp[250];
 
-ThermManager tm;
+//ThermManager tm;
 #ifdef USE_MQ
 
 #else
@@ -48,10 +48,10 @@ Adafruit_BME280 bme;
 Logging logger;
 RTCZero rtc;
 
-WiFiConnection wifi;
+WiFiConnection wifi(&logger);
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
-MessageParser messageParser;
+MessageParser messageParser(&logger);
 
 bool checkI2CAddress(int address);
 void readTemperature(boolean init);
@@ -183,7 +183,7 @@ void setup()
   readTemperature(true);
   // imposto Watchdog Timer a 8 Secondi
   //wdt_enable(WDTO_8S);
-  Watchdog.enable(8000);
+  Watchdog.enable(SLEEPYDOG_WAIT_TIME);
 }
 
 void setupMQ()
@@ -260,9 +260,7 @@ bool checkMQConnection()
 void loopMQ()
 {
   long now = millis();
-  bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
-  bool checkSendMonitorData = (now - timeoutCallMonitor) > WAIT_CALL_MONITOR;
-  bool checkReleTemperature = (now - timeoutSetTemperatureRele) > WAIT_SETRELE_TEMPERATURE;
+  //bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
 
   bool wifiConnectionAvailable = checkWIFIConnection();
   if (wifiConnectionAvailable)
@@ -275,11 +273,14 @@ void loopMQ()
       {
         sendWiFiRegisterMessage(config);
       }
+      bool checkSendMonitorData = (now - timeoutCallMonitor) > WAIT_CALL_MONITOR;
       if (checkSendMonitorData)
       {
         sendMonitorData(config, sensorData);
+
         // reset temp
         readTemperature(true);
+        timeoutReadTemperature = now;
         timeoutCallMonitor = now;
       }
     }
@@ -299,6 +300,7 @@ void loopMQ()
   }
 
   // read sensor data
+  bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
   if (checkTemperature)
   {
     readTemperature(false);
@@ -306,6 +308,7 @@ void loopMQ()
   }
 
 #ifdef FLAGRELETEMP
+  bool checkReleTemperature = (now - timeoutSetTemperatureRele) > WAIT_SETRELE_TEMPERATURE;
   if (checkReleTemperature)
   {
     int currentStatus = config.clientStatus;
@@ -320,7 +323,7 @@ void loopMQ()
     if (config.clientStatus != currentStatus)
     {
       // force call monitor to update server status
-      checkSendMonitorData = true;
+      timeoutCallMonitor = 0;
     }
     timeoutSetTemperatureRele = now;
   }
@@ -375,7 +378,7 @@ void sendMonitorDataString(CONFIG &cfg, SENSORDATA &sensor)
   }
 }
 
-void sendMonitorDataJSON(CONFIG &cfg, SENSORDATA &sensor)
+void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
 {
   DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
   bool send = messageParser.preparaMonitorDataRequest(cfg, sensor, jsonBuffer);
@@ -385,11 +388,11 @@ void sendMonitorDataJSON(CONFIG &cfg, SENSORDATA &sensor)
     char jsonMessage[jsonMessageLen + 1];
     serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
     char outTopic[] = TOPIC_MONITOR;
-    publishMessage(jsonMessage, outTopic);
+    //publishMessage(jsonMessage, outTopic);
   }
 }
 
-void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
+void sendMonitorDataNONE(CONFIG &cfg, SENSORDATA &sensor)
 {
 
   char jsonMessage[] = "{\"macAddress\":\"F8:F0:05:F7:DC:49\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":0,\"numSurveys\":0}";
@@ -522,7 +525,8 @@ void loopREST()
 void getCurrentProgrammingRecord(PROG_TIME &progRecord, CONFIG &conf)
 {
   // get current day and time
-  time_t t = tm.getWiFiTime(); //hc.getTime() + ONE_HOUR;
+  //time_t t = tm.getWiFiTime(); //hc.getTime() + ONE_HOUR;
+  time_t t = rtc.getEpoch();
   struct tm *timeinfo;
   timeinfo = localtime(&t);
   logger.printlnLog("GET Programming NOW : day %d, hour %d , minute %d, dayl %d",
@@ -574,6 +578,7 @@ bool checkThermostatStatus(float cT, CONFIG &conf, boolean connectionAvailable)
     getCurrentProgrammingRecord(progRecord, conf);
     tempToCheck = progRecord.minTemp;
     // recupera temperatura
+    // if misura = media & numero dispositivi > 1
     if (false)
     {
       managedTemp = getManagedTemperature(progRecord.priorityDisp, conf);
@@ -602,7 +607,7 @@ float getManagedTemperature(int pryDisp, CONFIG &conf)
     pryDisp = conf.key;
   float tempToCheck = 0.0;
   TEMPDATA tdata;
-  tm.getCurrentData(&tdata);
+  //FIXME tm.getCurrentData(&tdata);
   if (tdata.num > 0)
   {
     switch (tdata.tempMeasure)
@@ -682,7 +687,7 @@ bool checkI2CAddress(int address)
 
 /**
    Check if a configuration is available
-*/
+
 bool checkConfiguration(CONFIG *conf, bool connectionAvailable)
 {
   if (conf->key == 0)
@@ -699,14 +704,15 @@ bool checkConfiguration(CONFIG *conf, bool connectionAvailable)
   }
   return conf->key != 0;
 }
-
+*/
 /**
    Manage LCD output
 */
 void displayStatus()
 {
   // Get Time
-  time_t t = tm.getWiFiTime(); //hc.getTime() + ONE_HOUR;
+  //time_t t = tm.getWiFiTime(); //hc.getTime() + ONE_HOUR;
+  time_t t = rtc.getEpoch();
   struct tm *timeinfo;
   timeinfo = localtime(&t);
   char buffer[80];

@@ -1,16 +1,22 @@
 #include "WiFiConnection.h"
 
-WiFiConnection::WiFiConnection()
+WiFiConnection::WiFiConnection(Logging *_logger)
 {
+  logger = _logger;
+  rtcUpdated = false;
 }
 
 void WiFiConnection::updateRTC(RTCZero &rtc, int timeZoneOffset)
 {
-  unsigned long now = getTime();
-  if (now > 0)
+  if (!rtcUpdated)
   {
-    now -= timeZoneOffset * 60;
-    rtc.setEpoch(now);
+    unsigned long now = getTime();
+    if (now > 0)
+    {
+      now -= timeZoneOffset * 60;
+      rtc.setEpoch(now);
+      rtcUpdated = true;
+    }
   }
 }
 
@@ -20,12 +26,12 @@ bool WiFiConnection::connect(bool wait)
   //ssid = _ssid;
   //pass = _pass;
   int status = WiFi.status();
-  logger.printlnLog(
+  logger->printlnLog(
       "Attempting to connect to WPA SSID: %s : Current WiFi status : %d",
       SECRET_SSID, status);
   if (status == WL_NO_SHIELD)
   {
-    logger.printlnLog("WiFi shield not present");
+    logger->printlnLog("WiFi shield not present");
     return false;
   }
   int count = 0;
@@ -89,13 +95,13 @@ void WiFiConnection::getLocalIp(char *lcdBuffer)
 {
 
   IPAddress ip = WiFi.localIP();
-  sprintf(lcdBuffer, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+  snprintf(lcdBuffer, sizeof(lcdBuffer), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 }
 
 void WiFiConnection::getMacAddress(char *lcdBuffer)
 {
   byte mac[6];
   WiFi.macAddress(mac);
-  sprintf(lcdBuffer, "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3],
-          mac[2], mac[1], mac[0]);
+  snprintf(lcdBuffer, sizeof(lcdBuffer), "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3],
+           mac[2], mac[1], mac[0]);
 }
