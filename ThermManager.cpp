@@ -28,8 +28,8 @@ bool ThermManager::checkWiFiConnection()
     {
       char lcdIP[50];
       char lcdMAC[50];
-      hc->getLocalIp(lcdIP);
-      hc->getMacAddress(lcdMAC);
+      hc->getLocalIp(lcdIP,50);
+      hc->getMacAddress(lcdMAC,50);
       logger.printlnLog(
           "Connection successful - IP Address : %s , MAC Address : %s",
           lcdIP, lcdMAC);
@@ -145,8 +145,8 @@ unsigned long ThermManager::_wiFiRegister(CONFIG *config)
   char macAddress[50];
   char ipAddress[50];
   // get IP and MAC address
-  hc->getMacAddress(macAddress);
-  hc->getLocalIp(ipAddress);
+  hc->getMacAddress(macAddress,50);
+  hc->getLocalIp(ipAddress,50);
 
   jsonBuffer["flagLcd"] = config->flagLcd;
   jsonBuffer["flagLightSensor"] = config->flagLightSensor;

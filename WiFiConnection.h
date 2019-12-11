@@ -15,8 +15,8 @@ public:
   void disconnect();
   int getConnectionStatus();
   unsigned long getTime();
-  void getLocalIp(char *ip);
-  void getMacAddress(char *mac);
+  void getLocalIp(char *ip, int len);
+  void getMacAddress(char *mac, int len);
   void updateRTC(RTCZero &rtc, int timeZoneOffset);
   bool initServerConnection(Client *client);
 

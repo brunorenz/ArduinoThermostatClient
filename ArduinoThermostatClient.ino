@@ -215,11 +215,11 @@ bool checkWIFIConnection()
   bool rc = wifi.connect();
   if (rc)
   {
-    // get IP and MAC address
+    // get IP and MAC address    
     if (strlen(config.macAddress) == 0)
-      wifi.getMacAddress(config.macAddress);
+      wifi.getMacAddress(config.macAddress,sizeof(config.macAddress));
     if (strlen(config.ipAddress) == 0)
-      wifi.getLocalIp(config.ipAddress);
+      wifi.getLocalIp(config.ipAddress,sizeof(config.ipAddress));
   }
   return rc;
 }
@@ -719,7 +719,7 @@ void displayStatus()
   strftime(buffer, 80, "%d-%m-%Y %H:%M:%S", timeinfo);
   // get ip adress
   char lcdBuffer[3 * 4 + 2];
-  wifi.getLocalIp(lcdBuffer);
+  wifi.getLocalIp(lcdBuffer,sizeof(lcdBuffer));
   logger.printlnLog("Check at %s - IP : %s - FreeMemory %d", buffer, lcdBuffer, freeMemory());
   if (LCD)
   {

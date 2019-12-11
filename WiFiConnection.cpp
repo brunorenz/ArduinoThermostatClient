@@ -8,7 +8,7 @@ WiFiConnection::WiFiConnection(Logging *_logger)
 
 void WiFiConnection::updateRTC(RTCZero &rtc, int timeZoneOffset)
 {
-  if (!rtcUpdated)
+  if (!rtcUpdated || timeZoneOffset != 0)
   {
     unsigned long now = getTime();
     if (now > 0)
@@ -91,17 +91,18 @@ int WiFiConnection::getConnectionStatus()
   return WiFi.status();
 }
 
-void WiFiConnection::getLocalIp(char *lcdBuffer)
+void WiFiConnection::getLocalIp(char *lcdBuffer, int len)
 {
 
   IPAddress ip = WiFi.localIP();
-  snprintf(lcdBuffer, sizeof(lcdBuffer), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+  snprintf(lcdBuffer, len, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 }
 
-void WiFiConnection::getMacAddress(char *lcdBuffer)
+void WiFiConnection::getMacAddress(char *lcdBuffer,int len)
 {
   byte mac[6];
   WiFi.macAddress(mac);
-  snprintf(lcdBuffer, sizeof(lcdBuffer), "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3],
+  logger->printlnLog("Mac Address : %s (%d)",lcdBuffer,sizeof(lcdBuffer));
+  snprintf(lcdBuffer, len, "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3],
            mac[2], mac[1], mac[0]);
 }
