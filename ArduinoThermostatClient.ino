@@ -388,7 +388,7 @@ void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
     char jsonMessage[jsonMessageLen + 1];
     serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
     char outTopic[] = TOPIC_MONITOR;
-    //publishMessage(jsonMessage, outTopic);
+    publishMessage(jsonMessage, outTopic);
   }
 }
 
@@ -759,6 +759,7 @@ void displayStatus()
 void onMqttMessage(int messageSize)
 {
   // we received a message, print out the topic and contents
+  /*
   Serial.print("Received a message with topic '");
   Serial.print(mqttClient.messageTopic());
   Serial.print("', duplicate = ");
@@ -770,7 +771,7 @@ void onMqttMessage(int messageSize)
   Serial.print("', length ");
   Serial.print(messageSize);
   Serial.println(" bytes:");
-
+  */
   char messageTopic[100];
   //memcpy(p, payload, length);
   strcpy(messageTopic, mqttClient.messageTopic().c_str());

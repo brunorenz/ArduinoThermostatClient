@@ -47,7 +47,7 @@
 #define ADDRESS_BMP280 0x76
 #define ADDRESS_BME280 0x76
 
-#define MYDEBUG
+#define MYDEBUG_
 #define BME
 #define NO_BMP
 
