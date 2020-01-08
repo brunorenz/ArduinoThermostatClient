@@ -83,8 +83,9 @@
 #define POST_MONITOR "/therm/rest/monitor"
 #define POST_REGISTER "/therm/rest/wifiRegister"
 
-#define MAINCONTROLLER
+#define NO_MAINCONTROLLER
 #define LIGTH
+#define MOTION
 
 #ifdef LIGTH
 #define FLAGLIGHT

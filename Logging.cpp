@@ -14,11 +14,16 @@ Logging::Logging(RTCZero *rtc)
 
 void Logging::formatData(char *buffer)
 {
-  time_t t = __rtc->getEpoch();
-  struct tm *timeinfo;
-  timeinfo = localtime(&t);
+  if (__rtc != NULL)
+  {
+    time_t t = __rtc->getEpoch();
+    struct tm *timeinfo;
+    timeinfo = localtime(&t);
 
-  strftime(buffer, 80, "%d-%m-%Y %H:%M:%S ", timeinfo);
+    strftime(buffer, strlen(buffer), "%d-%m-%Y %H:%M:%S ", timeinfo);
+  }
+  else
+    sprintf(buffer, "NOTIME");
 }
 
 bool Logging::isLogEnabled()

@@ -98,11 +98,11 @@ void WiFiConnection::getLocalIp(char *lcdBuffer, int len)
   snprintf(lcdBuffer, len, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 }
 
-void WiFiConnection::getMacAddress(char *lcdBuffer,int len)
+void WiFiConnection::getMacAddress(char *lcdBuffer, int len)
 {
   byte mac[6];
   WiFi.macAddress(mac);
-  logger->printlnLog("Mac Address : %s (%d)",lcdBuffer,sizeof(lcdBuffer));
+  logger->printlnLog("Mac Address : %s (%d)", lcdBuffer, sizeof(lcdBuffer));
   snprintf(lcdBuffer, len, "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3],
            mac[2], mac[1], mac[0]);
 }

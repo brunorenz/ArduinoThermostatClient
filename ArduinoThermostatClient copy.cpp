@@ -166,13 +166,14 @@ void setup()
   logger.printlnLog("BMP280 status .. %s", BMP280 ? "OK" : "KO");
 
   pinMode(LED_BUILTIN, OUTPUT);
-#ifdef FLAGRELETEMP
   // SET Pin for RELE
   pinMode(relayPin, OUTPUT);
-#endif
   // Set resolution for analog read
   analogReadResolution(10);
   setupMQ();
+  // Set connection to Thermostat Manager
+  //wifi.setRTC(&rtc);
+  //tm.setHomeConnection(&hc, &rtc); //, &client);
   timeoutCallMonitor = millis();
   timeoutReadTemperature = timeoutCallMonitor;
   // call as soon as possible the first time
@@ -181,6 +182,7 @@ void setup()
   // read initial temperature values
   readTemperature(true);
   // imposto Watchdog Timer a 8 Secondi
+  //wdt_enable(WDTO_8S);
   Watchdog.enable(SLEEPYDOG_WAIT_TIME);
 }
 
@@ -213,11 +215,11 @@ bool checkWIFIConnection()
   bool rc = wifi.connect();
   if (rc)
   {
-    // get IP and MAC address
+    // get IP and MAC address    
     if (strlen(config.macAddress) == 0)
-      wifi.getMacAddress(config.macAddress, sizeof(config.macAddress));
+      wifi.getMacAddress(config.macAddress,sizeof(config.macAddress));
     if (strlen(config.ipAddress) == 0)
-      wifi.getLocalIp(config.ipAddress, sizeof(config.ipAddress));
+      wifi.getLocalIp(config.ipAddress,sizeof(config.ipAddress));
   }
   return rc;
 }
@@ -229,7 +231,6 @@ bool checkMQConnection()
   int rc = 1;
   if (!mqttClient.connected())
   {
-    logger.printlnLog("Connecting to MQTT server ..");
     // set a will message, used by the broker when the connection dies unexpectantly
     // you must know the size of the message before hand, and it must be set before connecting
     sendWillMessage();
@@ -238,24 +239,19 @@ bool checkMQConnection()
     rc = mqttClient.connect(broker, port);
     if (!rc)
     {
-      logger.printlnLog("MQTT connection failed! Error code = %d", mqttClient.connectError());
-      //Serial.println(mqttClient.connectError());
+      Serial.print("MQTT connection failed! Error code = ");
+      Serial.println(mqttClient.connectError());
     }
     else
     {
       // register listener
-      logger.printlnLog("Register MQTT listener ..");
       mqttClient.onMessage(onMqttMessage);
       // subscribe topic
       int subscribeQos = 1;
-#if defined FLAGRELETEMP || defined FLAGRELEMOTION
       const char topic1[] = TOPIC_UPDATEPROG;
       mqttClient.subscribe(topic1, subscribeQos);
-#endif
-#ifdef FLAGRELETEMP
       const char topic2[] = TOPIC_UPDATETEMP;
       mqttClient.subscribe(topic2, subscribeQos);
-#endif
     }
   }
   return rc == 1;
@@ -416,15 +412,20 @@ void sendWiFiRegisterMessage(CONFIG &cfg)
   int jsonMessageLen = measureJson(jsonBuffer);
   char jsonMessage[jsonMessageLen + 1];
   serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
+
+  //     logger.printlnLog("Send WiFiRegister message %s (%d - %d)", jsonMessage, jsonMessageLen, strlen(jsonMessage));
+  // bool retained = false;
+  // int qos = 1;
+  // bool dup = false;
   char outTopic[] = TOPIC_WIFI;
   publishMessage(jsonMessage, outTopic);
+  // mqttClient.beginMessage(outTopic, strlen(jsonMessage), retained, qos, dup);
+  // mqttClient.print(jsonMessage);
+  // mqttClient.endMessage();
   cfg.registered = 1;
   logger.printlnLog("Send WiFiRegister done!");
 }
 
-/**
- * Publish a generic message
- */
 void publishMessage(char *message, char *topic)
 {
   logger.printlnLog("Send message %s (%d) to Topic %s", message, strlen(message), topic);
@@ -435,7 +436,89 @@ void publishMessage(char *message, char *topic)
   mqttClient.print(message);
   mqttClient.endMessage();
 }
+/*
+void loopREST()
+{
+  // check connection
+  // if (connect available)
+  //    check configuration
+  //    if configuration available
+  //      normal management
+  // else
+  //    if configuration available
+  //      only check temperature according last configuration available
 
+  // recheck Serial
+  //available = Serial;
+  //
+  bool wifiConnectionAvailable = tm.checkWiFiConnection();
+  bool configurationAvailable = checkConfiguration(&config, wifiConnectionAvailable);
+  long now = millis();
+  bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
+  bool checkConfiguration = (now - timeoutCheckConfiguration) > WAIT_CALL_CHECK;
+  bool checkReleTemperature = (now - timeoutSetTemperatureRele) > WAIT_SETRELE_TEMPERATURE;
+  bool sendMonitorData = (now - timeoutCallMonitor) > WAIT_CALL_MONITOR;
+
+  /*
+    logger.printlnLog("wifi : %d, configAvailable : %d, checkTemperature : %d, checkConfiguration : %d, checkReleTemperature : %d, sendMonitorData :%d",
+                    wifiConnectionAvailable, configurationAvailable, checkTemperature, checkConfiguration, checkReleTemperature, sendMonitorData);
+  *
+  // read sensor data
+  if (checkTemperature)
+  {
+    readTemperature(false);
+    timeoutReadTemperature = now;
+  }
+
+  if (wifiConnectionAvailable)
+  {
+    // Check for Configuration Changes
+    if (checkConfiguration)
+    {
+      tm.checkUpdate(false, &config);
+      timeoutCheckConfiguration = now;
+      // force chack temperature
+      checkReleTemperature = true;
+    }
+  }
+
+#ifdef FLAGRELETEMP
+  if (checkReleTemperature)
+  {
+    int currentStatus = config.clientStatus;
+    bool on = false;
+
+    if (configurationAvailable)
+      on = checkThermostatStatus(sensorData.currentTemperature, &config, wifiConnectionAvailable);
+    config.clientStatus = on ? STATUS_ON : STATUS_OFF;
+    if (on)
+      digitalWrite(relayPin, LOW);
+    else
+      digitalWrite(relayPin, HIGH);
+    if (config.clientStatus != currentStatus)
+    {
+      // force call monitor to update server status
+      sendMonitorData = true;
+    }
+    timeoutSetTemperatureRele = now;
+  }
+#endif
+
+  if (wifiConnectionAvailable)
+  {
+    // send Data to monitor
+    if (sendMonitorData)
+    {
+      tm.sendMonitorData(&config, &sensorData);
+      // reset temp
+      readTemperature(true);
+      timeoutCallMonitor = now;
+    }
+  }
+  logger.printlnLog("Check FreeMemory %d", freeMemory());
+  delay(WAIT_MAIN_LOOP);
+}
+*/
 /**
   Recupera record di programmazione corrente in base a giorno / ora
 */
@@ -636,7 +719,7 @@ void displayStatus()
   strftime(buffer, 80, "%d-%m-%Y %H:%M:%S", timeinfo);
   // get ip adress
   char lcdBuffer[3 * 4 + 2];
-  wifi.getLocalIp(lcdBuffer, sizeof(lcdBuffer));
+  wifi.getLocalIp(lcdBuffer,sizeof(lcdBuffer));
   logger.printlnLog("Check at %s - IP : %s - FreeMemory %d", buffer, lcdBuffer, freeMemory());
   if (LCD)
   {
