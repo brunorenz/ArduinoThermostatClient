@@ -40,14 +40,14 @@
 #define TERM_ID_CUST 1
 #define TERM_ID_DISP 1
 
-#define SLEEPYDOG_WAIT_TIME 12000
+#define SLEEPYDOG_WAIT_TIME 30000
 #define CONNECT_WAIT_TIME 5000
 // LCD
 #define ADDRESS_LCD 0x3f
 #define ADDRESS_BMP280 0x76
 #define ADDRESS_BME280 0x76
 
-#define MYDEBUG_
+#define MYDEBUG
 #define BME
 #define NO_BMP
 
@@ -85,7 +85,7 @@
 
 #define NO_MAINCONTROLLER
 #define LIGTH
-#define MOTION
+#define NO_MOTION
 
 #ifdef LIGTH
 #define FLAGLIGHT

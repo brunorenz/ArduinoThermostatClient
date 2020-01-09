@@ -158,7 +158,9 @@ void setup()
   }
   if (BMP280)
   {
-    bme.begin();
+    int status = bme.begin(ADDRESS_BMP280);
+    logger.printlnLog("BME Status %d : ",status);
+    Serial.println(bme.sensorID(),16);        
   }
   logger.setRTC(&rtc);
   logger.printlnLog("ThermostatClient start...");
@@ -364,12 +366,23 @@ void sendWillMessage()
   logger.printlnLog("Send Will message %s", willPayload);
   willSent = 1;
 }
-
-//{"macAddress":"F8:F0:05:F7:DC:49","temperature":20.79833,"pressure":1013.37,"light":53.09245,"humidity":65.03451,"statusThermostat":0,"numSurveys":6}
-
+/*
 void sendMonitorDataString(CONFIG &cfg, SENSORDATA &sensor)
 {
-  //"{\"macAddress\":\"%s\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":%d,\"numSurveys\":%d}"
+  DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
+  bool send = messageParser.preparaMonitorDataRequest(cfg, sensor, jsonBuffer);
+  if (send)
+  {
+    int jsonMessageLen = measureJson(jsonBuffer);
+    char jsonMessage[jsonMessageLen + 1];
+    serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
+    char outTopic[] = TOPIC_MONITOR;
+    publishMessage(jsonMessage, outTopic);
+  }
+}
+*/
+void sendMonitorDataMQTT(CONFIG &cfg, SENSORDATA &sensor)
+{
   DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
   bool send = messageParser.preparaMonitorDataRequest(cfg, sensor, jsonBuffer);
   if (send)
@@ -384,25 +397,19 @@ void sendMonitorDataString(CONFIG &cfg, SENSORDATA &sensor)
 
 void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
 {
-  DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
-  bool send = messageParser.preparaMonitorDataRequest(cfg, sensor, jsonBuffer);
-  if (send)
-  {
-    int jsonMessageLen = measureJson(jsonBuffer);
-    char jsonMessage[jsonMessageLen + 1];
-    serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
-    char outTopic[] = TOPIC_MONITOR;
-    publishMessage(jsonMessage, outTopic);
-  }
-}
 
-void sendMonitorDataNONE(CONFIG &cfg, SENSORDATA &sensor)
-{
+  //char jsonMessage[] = "{\"macAddress\":\"F8:F0:05:F7:DC:49\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":0,\"numSurveys\":0}";
+  char jsonMessage[200];
 
-  char jsonMessage[] = "{\"macAddress\":\"F8:F0:05:F7:DC:49\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":0,\"numSurveys\":0}";
-  //serializeJson(jsonBuffer, jsonMessage, sizeof(jsonMessage));
+  float t = sensor.totalTemperature / sensor.numItem;
+  float p = sensor.totalPressure / sensor.numItem / 100.0;
+  float l = sensor.totalLight / sensor.numItem;
+  float h = sensor.humidity / sensor.numItem;
+  sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"temperature\": %f,\"pressure\": %f,\"light\": %f,\"humidity\": %f,\"numSurveys\":%d}",
+          cfg.macAddress, t, p, l, h, sensor.numItem);
+  //logger.printlnLog("Send monitor data : %s",jsonMessage);
   char outTopic[] = TOPIC_MONITOR;
-  //publishMessage(jsonMessage, outTopic);
+  publishMessage(jsonMessage, outTopic);
 }
 
 /**
