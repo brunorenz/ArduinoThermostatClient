@@ -38,12 +38,9 @@ bool WiFiConnection::connect(bool wait)
     {
       if (!wait && count > 0)
         break;
-
-      //myprinlogger.printlnLog("Attempting to connect to WPA SSID: %s",ssid);
-      //myprintln(ssid);
-  logger->printlnLog(
-      "Attempting to connect to WPA SSID: %s",
-      SECRET_SSID);
+      logger->printlnLog(
+          "Attempting to connect to WPA SSID: %s",
+          SECRET_SSID);
 
       // Connect to WPA/WPA2 network:
       status = WiFi.begin(SECRET_SSID, SECRET_PASS);
@@ -54,7 +51,7 @@ bool WiFiConnection::connect(bool wait)
     }
     if (status != WL_CONNECTED)
       logger->printlnLog(
-      "Connection failed : status : %d",status);
+          "Connection failed : status : %d", status);
     // Set Low Power Mode
     WiFi.lowPowerMode();
   }
@@ -99,15 +96,15 @@ void WiFiConnection::getLocalIp(char *lcdBuffer, int len)
 
   IPAddress ip = WiFi.localIP();
   snprintf(lcdBuffer, len, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
-  logger->printlnLog("Local IP : %s (%d)", lcdBuffer, len);           
+  logger->printlnLog("Local IP : %s (%d)", lcdBuffer, len);
 }
 
 void WiFiConnection::getMacAddress(char *lcdBuffer, int len)
 {
   byte mac[6];
   WiFi.macAddress(mac);
-  
+
   snprintf(lcdBuffer, len, "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3],
            mac[2], mac[1], mac[0]);
-  logger->printlnLog("Mac Address : %s (%d)", lcdBuffer, len);           
+  logger->printlnLog("Mac Address : %s (%d)", lcdBuffer, len);
 }

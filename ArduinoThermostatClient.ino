@@ -2,6 +2,7 @@
   TermClient main module
 */
 
+#define MQTT_1
 #include <Adafruit_SleepyDog.h>
 #include "TermClient.h"
 #include "HttpConnection.h"
@@ -17,8 +18,14 @@
 #include <time.h>
 #include <string.h>
 #include <ArduinoJson.h>
+#ifdef MQTT_0
 #include <ArduinoMqttClient.h>
-#include <Adafruit_Sensor.h>
+#endif
+#ifdef MQTT_1
+#include <MQTT.h>
+#endif
+
+//#include <Adafruit_Sensor.h>
 
 int status = WL_IDLE_STATUS; // the WiFi radio's status
 boolean LCD = false;
@@ -49,8 +56,15 @@ Logging logger;
 RTCZero rtc;
 
 WiFiConnection wifi(&logger);
+
 WiFiClient wifiClient;
+#ifdef MQTT_0
 MqttClient mqttClient(wifiClient);
+#endif
+#ifdef MQTT_1
+MQTTClient mqttClient;
+#endif
+
 MessageParser messageParser(&logger);
 
 bool checkI2CAddress(int address);
@@ -80,11 +94,13 @@ uint8_t bell[8] = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
 */
 
 //void (*resetFunc)(void) = 0; //declare reset function at address 0
-
-int checkServerConnection(WiFiClient &client)
+/*
+uint8_t checkServerConnection(WiFiClient &client)
 {
   uint8_t connected = client.connected();
+  return connected;
 }
+*/
 /**
   Setup .. initialization
 */
@@ -148,6 +164,8 @@ void setup()
   Wire.begin();
   // Initialize rtc
   rtc.begin();
+  logger.setRTC(&rtc);
+  // check LCD and Thermostat
   LCD = checkI2CAddress(ADDRESS_LCD);
   BMP280 = checkI2CAddress(ADDRESS_BMP280);
   if (LCD)
@@ -159,10 +177,10 @@ void setup()
   if (BMP280)
   {
     int status = bme.begin(ADDRESS_BMP280);
-    logger.printlnLog("BME Status %d : ",status);
-    Serial.println(bme.sensorID(),16);        
+    logger.printlnLog("BME Status %d : ", status);
+    Serial.println(bme.sensorID(), 16);
   }
-  logger.setRTC(&rtc);
+
   logger.printlnLog("ThermostatClient start...");
   logger.printlnLog("LCD status    .. %s", LCD ? "OK" : "KO");
   logger.printlnLog("BMP280 status .. %s", BMP280 ? "OK" : "KO");
@@ -188,6 +206,13 @@ void setup()
 
 void setupMQ()
 {
+#ifdef MQTT_1
+  const char broker[] = TERM_SERVER_MQ;
+  int port = 1883;
+  client.begin(broker, port, wifiClient);
+  client.onMessageAdvanced(onMqttMessageAdvanced);
+  //sendWillMessage();
+#endif
   if (checkWIFIConnection())
     checkMQConnection();
 }
@@ -678,6 +703,10 @@ void displayStatus()
   else
   {
   }
+}
+
+void onMqttMessageAdvanced(MQTTClient *client, char topic[], char payload[], int payload_length)
+{
 }
 
 void onMqttMessage(int messageSize)
