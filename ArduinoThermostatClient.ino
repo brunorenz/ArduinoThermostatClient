@@ -6,7 +6,7 @@
 #include <Adafruit_SleepyDog.h>
 #include "TermClient.h"
 #include "HttpConnection.h"
-#include "ThermManager.h"
+//#include "ThermManager.h"
 #include "MessageParser.h"
 #include "MemoryFree.h"
 #include "Logging.h"
@@ -30,7 +30,7 @@
 int status = WL_IDLE_STATUS; // the WiFi radio's status
 boolean LCD = false;
 boolean BMP280 = false;
-char temp[250];
+//char temp[250];
 
 //ThermManager tm;
 #ifdef USE_MQ
@@ -38,6 +38,10 @@ char temp[250];
 #else
 HttpConnection hc;
 #endif
+
+// configuration data
+CONFIG config;
+SENSORDATA sensorData;
 
 // LCD
 LiquidCrystal_I2C lcd(ADDRESS_LCD, 20, 4);
@@ -73,13 +77,12 @@ float getManagedTemperature(int pryDisp, CONFIG *conf);
 bool checkConfiguration(CONFIG *conf, bool connectionAvailable);
 bool checkThermostatStatus(float cT, CONFIG &conf, boolean connectionAvailable);
 void loopREST();
+void initConfiguration(CONFIG &cfg);
 
 long timeoutCallMonitor;
 long timeoutReadTemperature;
 long timeoutSetTemperatureRele;
 long timeoutCheckConfiguration;
-CONFIG config;
-SENSORDATA sensorData;
 
 const int sensorPin = A1;
 const int relayPin = 9;
@@ -104,6 +107,7 @@ uint8_t checkServerConnection(WiFiClient &client)
 /**
   Setup .. initialization
 */
+
 void setup()
 {
 
@@ -112,6 +116,10 @@ void setup()
   // wait serial to start
   delay(2000);
 
+  // initialize configuration
+  initConfiguration(config);
+
+  /*
   // initialize configuration data
   config.progLoaded = false;
   config.serverStatus = STATUS_OFF;
@@ -159,28 +167,38 @@ void setup()
   config.flagPressureSensor = 1;
   config.flagHumiditySensor = 1;
 #endif
-
+*/
   // initialize I2C comunication
   Wire.begin();
   // Initialize rtc
   rtc.begin();
   logger.setRTC(&rtc);
+  // check LCD
+  LCD = checkLCD();
+  if (LCD)
+    config.flagLcd = 1;
+
   // check LCD and Thermostat
-  LCD = checkI2CAddress(ADDRESS_LCD);
-  BMP280 = checkI2CAddress(ADDRESS_BMP280);
+  //LCD = checkI2CAddress(ADDRESS_LCD);
+  //BMP280 = checkI2CAddress(ADDRESS_BMP280);
+  /*
   if (LCD)
   {
     lcd.init();      //initialize the lcd
     lcd.backlight(); //open the backlight
     config.flagLcd = 1;
   }
+  */
+  // check Thermostat
+  BMP280 = checkBME();
+  /*
   if (BMP280)
   {
     int status = bme.begin(ADDRESS_BMP280);
     logger.printlnLog("BME Status %d : ", status);
     Serial.println(bme.sensorID(), 16);
   }
-
+  */
   logger.printlnLog("ThermostatClient start...");
   logger.printlnLog("LCD status    .. %s", LCD ? "OK" : "KO");
   logger.printlnLog("BMP280 status .. %s", BMP280 ? "OK" : "KO");
@@ -209,8 +227,8 @@ void setupMQ()
 #ifdef MQTT_1
   const char broker[] = TERM_SERVER_MQ;
   int port = 1883;
-  client.begin(broker, port, wifiClient);
-  client.onMessageAdvanced(onMqttMessageAdvanced);
+  mqttClient.begin(broker, port, wifiClient);
+  mqttClient.onMessageAdvanced(onMqttMessageAdvanced);
   //sendWillMessage();
 #endif
   if (checkWIFIConnection())
@@ -253,26 +271,33 @@ bool checkWIFIConnection()
 */
 bool checkMQConnection()
 {
-  int rc = 1;
+  bool rc; // = 1;
   if (!mqttClient.connected())
   {
     logger.printlnLog("Connecting to MQTT server ..");
     // set a will message, used by the broker when the connection dies unexpectantly
     // you must know the size of the message before hand, and it must be set before connecting
+#ifdef MQTT_1
+    rc = mqttClient.connect(config.macAddress);
+    if (!rc)
+      logger.printlnLog("MQTT connection failed!");
+#endif
+#ifdef MQTT_0
     sendWillMessage();
     const char broker[] = TERM_SERVER_MQ;
     int port = 1883;
     rc = mqttClient.connect(broker, port);
-    if (!rc)
+    if (rc)
     {
-      logger.printlnLog("MQTT connection failed! Error code = %d", mqttClient.connectError());
-      //Serial.println(mqttClient.connectError());
-    }
-    else
-    {
-      // register listener
       logger.printlnLog("Register MQTT listener ..");
       mqttClient.onMessage(onMqttMessage);
+    }
+    else
+      logger.printlnLog("MQTT connection failed! Error code = %d", mqttClient.connectError());
+#endif
+
+    if (rc)
+    {
       // subscribe topic
       int subscribeQos = 1;
 #if defined FLAGRELETEMP || defined FLAGRELEMOTION
@@ -285,7 +310,7 @@ bool checkMQConnection()
 #endif
     }
   }
-  return rc == 1;
+  return rc; // == 1;
 }
 
 void loopMQ()
@@ -318,7 +343,7 @@ void loopMQ()
   }
   if (wifiConnectionAvailable)
   {
-    wifi.updateRTC(rtc, config.timeZoneOffset);
+    //wifi.updateRTC(rtc, config.timeZoneOffset);
     /*
     unsigned long now = wifi.getTime();
     if (now > 0)
@@ -361,7 +386,14 @@ void loopMQ()
 #endif
 
   logger.printlnLog("Check FreeMemory %d", freeMemory());
+
+#ifdef MQTT_1
+  mqttClient.loop();
+#endif
+#ifdef MQTT_0
   mqttClient.poll();
+#endif
+
   delay(WAIT_MAIN_LOOP);
   // Watchdog Timer
   Watchdog.reset();
@@ -385,9 +417,13 @@ void sendWillMessage()
   int willQos = 1;
   char willTopic[] = TOPIC_LASTWILL;
 
+#ifdef MQTT_1
+#endif
+#ifdef MQTT_0
   mqttClient.beginWill(willTopic, strlen(willPayload), willRetain, willQos);
   mqttClient.print(willPayload);
   mqttClient.endWill();
+#endif
   logger.printlnLog("Send Will message %s", willPayload);
   willSent = 1;
 }
@@ -463,9 +499,14 @@ void publishMessage(char *message, char *topic)
   bool retained = false;
   int qos = 1;
   bool dup = false;
+#ifdef MQTT_1
+  mqttClient.publish(topic, message, retained, qos);
+#endif
+#ifdef MQTT_0
   mqttClient.beginMessage(topic, strlen(message), retained, qos, dup);
   mqttClient.print(message);
   mqttClient.endMessage();
+#endif
 }
 
 /**
@@ -705,12 +746,30 @@ void displayStatus()
   }
 }
 
+
 void onMqttMessageAdvanced(MQTTClient *client, char topic[], char payload[], int payload_length)
 {
+#ifdef MQTT_1
+  if (strcmp(topic, TOPIC_UPDATEPROG) == 0)
+  {
+    // process update configuration
+    char message[payload_length + 1];
+    memcpy(message, payload, payload_length);
+    message[payload_length] = '\0';
+    logger.printlnLog("Letto da Topic %s messaggio %s", topic, message);
+    messageParser.updateConfigurationResponse(config, message);
+    wifi.updateRTC(rtc, config.timeZoneOffset);
+  }
+  else
+  {
+    logger.printlnLog("Letto da Topic %s messaggio non implementato", topic);
+  }
+#endif  
 }
 
 void onMqttMessage(int messageSize)
 {
+#ifdef MQTT_0  
   // we received a message, print out the topic and contents
   /*
   Serial.print("Received a message with topic '");
@@ -756,4 +815,83 @@ void onMqttMessage(int messageSize)
   {
     logger.printlnLog("Letto da Topic %s messaggio non implementato", messageTopic);
   }
+#endif    
+}
+/**
+ * Initialize configuration data
+ */
+void initConfiguration(CONFIG &cfg)
+{
+  // initialize configuration data
+  cfg.progLoaded = false;
+  cfg.serverStatus = STATUS_OFF;
+  cfg.clientStatus = STATUS_OFF;
+  cfg.key = 0;
+  cfg.flagLcd = 0;
+  cfg.flagLightSensor = 0;
+  cfg.flagMotionSensor = 0;
+  cfg.flagReleTemp = 0;
+  cfg.flagReleLight = 0;
+  cfg.flagTemperatureSensor = 0;
+  cfg.flagPressureSensor = 0;
+  cfg.flagHumiditySensor = 0;
+  cfg.timeZoneOffset = -1;
+  cfg.registered = false;
+  for (int i = 0; i < MAX_DAY; i++)
+  {
+    cfg.day[i].day = -1;
+    cfg.day[i].numProg = 0;
+  }
+  cfg.macAddress[0] = 0;
+  cfg.ipAddress[0] = 0;
+
+#ifdef FLAGLIGHT
+  cfg.flagLightSensor = 1;
+#endif
+#ifdef FLAGMOTION
+  cfg.flagMotionSensor = 1;
+#endif
+#ifdef FLAGRELEMOTION
+  cfg.flagReleLight = 1;
+#endif
+#ifdef FLAGRELETEMP
+  cfg.flagReleTemp = 1;
+#endif
+
+#ifdef BMP
+  cfg.flagTemperatureSensor = 1;
+  cfg.flagPressureSensor = 1;
+  cfg.flagHumiditySensor = 0;
+#endif
+
+#ifdef BME
+  cfg.flagTemperatureSensor = 1;
+  cfg.flagPressureSensor = 1;
+  cfg.flagHumiditySensor = 1;
+#endif
+}
+
+bool checkLCD()
+{
+
+  bool flagLCD = checkI2CAddress(ADDRESS_LCD);
+  if (flagLCD)
+  {
+    lcd.init();      //initialize the lcd
+    lcd.backlight(); //open the backlight
+    //config.flagLcd = 1;
+  }
+  return flagLCD;
+}
+
+bool checkBME()
+{
+  bool flagBME = checkI2CAddress(ADDRESS_BMP280);
+  if (flagBME)
+  {
+    int status = bme.begin(ADDRESS_BMP280);
+    logger.printlnLog("BME Status %d : ", status);
+    //Serial.println(bme.sensorID(), 16);
+  }
+  return flagBME;
 }

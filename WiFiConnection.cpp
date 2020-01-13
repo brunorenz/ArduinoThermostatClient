@@ -94,17 +94,34 @@ int WiFiConnection::getConnectionStatus()
 void WiFiConnection::getLocalIp(char *lcdBuffer, int len)
 {
 
-  IPAddress ip = WiFi.localIP();
-  snprintf(lcdBuffer, len, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
-  logger->printlnLog("Local IP : %s (%d)", lcdBuffer, len);
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    IPAddress ip = WiFi.localIP();
+    snprintf(lcdBuffer, len, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+    logger->printlnLog("Local IP : %s (%d)", lcdBuffer, len);
+  }
+  else
+  {
+    logger->printlnLog("WiFi not connected !!");
+    lcdBuffer[0] = '0';
+  }
 }
 
 void WiFiConnection::getMacAddress(char *lcdBuffer, int len)
 {
-  byte mac[6];
-  WiFi.macAddress(mac);
+  if (WiFi.status() == WL_CONNECTED)
+  {
 
-  snprintf(lcdBuffer, len, "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3],
-           mac[2], mac[1], mac[0]);
-  logger->printlnLog("Mac Address : %s (%d)", lcdBuffer, len);
+    byte mac[6];
+    WiFi.macAddress(mac);
+
+    snprintf(lcdBuffer, len, "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3],
+             mac[2], mac[1], mac[0]);
+    logger->printlnLog("Mac Address : %s (%d)", lcdBuffer, len);
+  }
+  else
+  {
+    logger->printlnLog("WiFi not connected !!");
+    lcdBuffer[0] = '0';
+  }
 }
