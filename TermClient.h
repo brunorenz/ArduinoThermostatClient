@@ -4,7 +4,9 @@
 /**
   TermClient constant header
 */
-#define USE_MQ
+#define USE_MQTT
+#define USE_HTTP
+#define MQTT_1
 #define WEBSOCKET_
 #define REST_OFF
 #define LOCAL_

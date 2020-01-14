@@ -2,7 +2,6 @@
   TermClient main module
 */
 
-#define MQTT_1
 #include <Adafruit_SleepyDog.h>
 #include "TermClient.h"
 #include "HttpConnection.h"
@@ -210,7 +209,13 @@ void setup()
 #endif
   // Set resolution for analog read
   analogReadResolution(10);
-  setupMQ();
+
+#ifdef USE_MQTT
+  setupMQTT();
+#elif defined USE_HTTP
+  setupREST();
+#endif
+
   timeoutCallMonitor = millis();
   timeoutReadTemperature = timeoutCallMonitor;
   // call as soon as possible the first time
@@ -222,14 +227,13 @@ void setup()
   Watchdog.enable(SLEEPYDOG_WAIT_TIME);
 }
 
-void setupMQ()
+void setupMQTT()
 {
 #ifdef MQTT_1
   const char broker[] = TERM_SERVER_MQ;
   int port = 1883;
   mqttClient.begin(broker, port, wifiClient);
   mqttClient.onMessageAdvanced(onMqttMessageAdvanced);
-  sendWillMessage();
 #endif
   if (checkWIFIConnection())
     checkMQConnection();
@@ -278,6 +282,7 @@ bool checkMQConnection()
     // set a will message, used by the broker when the connection dies unexpectantly
     // you must know the size of the message before hand, and it must be set before connecting
 #ifdef MQTT_1
+    sendWillMessage();
     rc = mqttClient.connect(config.macAddress);
     if (!rc)
       logger.printlnLog("MQTT connection failed!");
@@ -748,7 +753,6 @@ void displayStatus()
   }
 }
 
-
 void onMqttMessageAdvanced(MQTTClient *client, char topic[], char payload[], int payload_length)
 {
 #ifdef MQTT_1
@@ -766,12 +770,12 @@ void onMqttMessageAdvanced(MQTTClient *client, char topic[], char payload[], int
   {
     logger.printlnLog("Letto da Topic %s messaggio non implementato", topic);
   }
-#endif  
+#endif
 }
 
 void onMqttMessage(int messageSize)
 {
-#ifdef MQTT_0  
+#ifdef MQTT_0
   // we received a message, print out the topic and contents
   /*
   Serial.print("Received a message with topic '");
@@ -817,7 +821,7 @@ void onMqttMessage(int messageSize)
   {
     logger.printlnLog("Letto da Topic %s messaggio non implementato", messageTopic);
   }
-#endif    
+#endif
 }
 /**
  * Initialize configuration data
@@ -872,7 +876,9 @@ void initConfiguration(CONFIG &cfg)
   cfg.flagHumiditySensor = 1;
 #endif
 }
-
+/**
+ * initialize LCD
+ **/
 bool checkLCD()
 {
 
@@ -886,6 +892,9 @@ bool checkLCD()
   return flagLCD;
 }
 
+/**
+ * initialize BME sensor
+ **/
 bool checkBME()
 {
   bool flagBME = checkI2CAddress(ADDRESS_BMP280);
@@ -893,7 +902,88 @@ bool checkBME()
   {
     int status = bme.begin(ADDRESS_BMP280);
     logger.printlnLog("BME Status %d : ", status);
-    //Serial.println(bme.sensorID(), 16);
   }
   return flagBME;
+}
+
+void loopREST()
+{
+  // check connection
+  // if (connect available)
+  //    check configuration
+  //    if configuration available
+  //      normal management
+  // else
+  //    if configuration available
+  //      only check temperature according last configuration available
+
+  // recheck Serial
+  //available = Serial;
+  //
+  bool wifiConnectionAvailable = tm.checkWiFiConnection();
+  bool configurationAvailable = checkConfiguration(&config, wifiConnectionAvailable);
+  long now = millis();
+  bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
+  bool checkConfiguration = (now - timeoutCheckConfiguration) > WAIT_CALL_CHECK;
+  bool checkReleTemperature = (now - timeoutSetTemperatureRele) > WAIT_SETRELE_TEMPERATURE;
+  bool sendMonitorData = (now - timeoutCallMonitor) > WAIT_CALL_MONITOR;
+
+  /*
+    logger.printlnLog("wifi : %d, configAvailable : %d, checkTemperature : %d, checkConfiguration : %d, checkReleTemperature : %d, sendMonitorData :%d",
+                    wifiConnectionAvailable, configurationAvailable, checkTemperature, checkConfiguration, checkReleTemperature, sendMonitorData);
+  */
+  // read sensor data
+  if (checkTemperature)
+  {
+    readTemperature(false);
+    timeoutReadTemperature = now;
+  }
+
+  if (wifiConnectionAvailable)
+  {
+    // Check for Configuration Changes
+    if (checkConfiguration)
+    {
+      tm.checkUpdate(false, &config);
+      timeoutCheckConfiguration = now;
+      // force chack temperature
+      checkReleTemperature = true;
+    }
+  }
+
+#ifdef FLAGRELETEMP
+  if (checkReleTemperature)
+  {
+    int currentStatus = config.clientStatus;
+    bool on = false;
+
+    if (configurationAvailable)
+      on = checkThermostatStatus(sensorData.currentTemperature, &config, wifiConnectionAvailable);
+    config.clientStatus = on ? STATUS_ON : STATUS_OFF;
+    if (on)
+      digitalWrite(relayPin, LOW);
+    else
+      digitalWrite(relayPin, HIGH);
+    if (config.clientStatus != currentStatus)
+    {
+      // force call monitor to update server status
+      sendMonitorData = true;
+    }
+    timeoutSetTemperatureRele = now;
+  }
+#endif
+
+  if (wifiConnectionAvailable)
+  {
+    // send Data to monitor
+    if (sendMonitorData)
+    {
+      tm.sendMonitorData(&config, &sensorData);
+      // reset temp
+      readTemperature(true);
+      timeoutCallMonitor = now;
+    }
+  }
+  logger.printlnLog("Check FreeMemory %d", freeMemory());
+  delay(WAIT_MAIN_LOOP);
 }
