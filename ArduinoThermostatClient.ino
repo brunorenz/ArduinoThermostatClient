@@ -66,7 +66,7 @@ WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
 #endif
 #ifdef MQTT_1
-MQTTClient mqttClient;
+MQTTClient mqttClient(256);
 #endif
 
 MessageParser messageParser(&logger);
@@ -229,7 +229,7 @@ void setupMQ()
   int port = 1883;
   mqttClient.begin(broker, port, wifiClient);
   mqttClient.onMessageAdvanced(onMqttMessageAdvanced);
-  //sendWillMessage();
+  sendWillMessage();
 #endif
   if (checkWIFIConnection())
     checkMQConnection();
@@ -418,6 +418,7 @@ void sendWillMessage()
   char willTopic[] = TOPIC_LASTWILL;
 
 #ifdef MQTT_1
+  mqttClient.setWill(willTopic, willPayload, willRetain, willQos);
 #endif
 #ifdef MQTT_0
   mqttClient.beginWill(willTopic, strlen(willPayload), willRetain, willQos);
@@ -468,7 +469,6 @@ void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
   float h = sensor.humidity / sensor.numItem;
   sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"temperature\": %f,\"pressure\": %f,\"light\": %f,\"humidity\": %f,\"numSurveys\":%d}",
           cfg.macAddress, t, p, l, h, sensor.numItem);
-  //logger.printlnLog("Send monitor data : %s",jsonMessage);
   char outTopic[] = TOPIC_MONITOR;
   publishMessage(jsonMessage, outTopic);
 }
@@ -500,7 +500,9 @@ void publishMessage(char *message, char *topic)
   int qos = 1;
   bool dup = false;
 #ifdef MQTT_1
-  mqttClient.publish(topic, message, retained, qos);
+  boolean rc = mqttClient.publish(topic, message, retained, qos);
+  if (!rc)
+    logger.printlnLog("Publush failed !!");
 #endif
 #ifdef MQTT_0
   mqttClient.beginMessage(topic, strlen(message), retained, qos, dup);
