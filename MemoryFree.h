@@ -14,4 +14,3 @@
 #include <stddef.h> // for size_t
 
 size_t freeMemory();
-

@@ -5,7 +5,7 @@
   TermClient constant header
 */
 #define USE_MQTT
-#define USE_HTTP
+#define USE_HTTP_NO
 #define MQTT_1
 #define WEBSOCKET_
 #define REST_OFF

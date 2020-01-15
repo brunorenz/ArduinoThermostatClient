@@ -1,11 +1,11 @@
 #include "HttpConnection.h"
 
 /*
-HttpConnection::HttpConnection(Logging *_logger) : WiFiConnection(_logger)
-{
+  HttpConnection::HttpConnection(Logging *_logger) : WiFiConnection(_logger)
+  {
   //  Parent::
   //  this->rtc = NULL;
-}
+  }
 */
 bool HttpConnection::deserializeJsonResponse(Client &client, DynamicJsonDocument &doc)
 {
@@ -31,15 +31,15 @@ bool HttpConnection::deserializeJsonResponse(Client &client, DynamicJsonDocument
   return rc;
 }
 /*
-void HttpConnection::setRTC(RTCZero *rtc)
-{
+  void HttpConnection::setRTC(RTCZero *rtc)
+  {
   this->rtc = rtc;
   logger.setRTC(this->rtc);
-}
+  }
 */
 /*
-bool HttpConnection::connect(char *_ssid, char *_pass, bool wait)
-{
+  bool HttpConnection::connect(char *_ssid, char *_pass, bool wait)
+  {
   // attempt to connect to WiFi network:
   ssid = _ssid;
   pass = _pass;
@@ -74,33 +74,33 @@ bool HttpConnection::connect(char *_ssid, char *_pass, bool wait)
     WiFi.lowPowerMode();
   }
   return status == WL_CONNECTED;
-}
+  }
 
-bool HttpConnection::checkConnection(bool wait)
-{
+  bool HttpConnection::checkConnection(bool wait)
+  {
   if (ssid == NULL)
     return false;
   return connect(ssid, pass, wait);
-}
+  }
 
-bool HttpConnection::reconnect(bool wait)
-{
+  bool HttpConnection::reconnect(bool wait)
+  {
   disconnect();
   return connect(SECRET_SSID, SECRET_PASS, wait);
-}
+  }
 
-bool HttpConnection::connect(bool wait)
-{
+  bool HttpConnection::connect(bool wait)
+  {
   return connect(SECRET_SSID, SECRET_PASS, wait);
-}
+  }
 
-void HttpConnection::disconnect()
-{
+  void HttpConnection::disconnect()
+  {
   WiFi.disconnect();
-}
+  }
 
-unsigned long HttpConnection::getTime()
-{
+  unsigned long HttpConnection::getTime()
+  {
   char temp[80];
   unsigned long epoch;
   int numberOfTries = 0, maxTries = 6;
@@ -114,28 +114,28 @@ unsigned long HttpConnection::getTime()
     logger.printlnLog(temp, "Server NTP unreachable!!");
   }
   return epoch;
-}
+  }
 
-int HttpConnection::getConnectionStatus()
-{
+  int HttpConnection::getConnectionStatus()
+  {
   return WiFi.status();
-}
+  }
 
-void HttpConnection::getLocalIp(char *lcdBuffer)
-{
+  void HttpConnection::getLocalIp(char *lcdBuffer)
+  {
 
   IPAddress ip = WiFi.localIP();
   sprintf(lcdBuffer, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
-}
+  }
 
-void HttpConnection::getMacAddress(char *lcdBuffer)
-{
+  void HttpConnection::getMacAddress(char *lcdBuffer)
+  {
   byte mac[6];
   WiFi.macAddress(mac);
   IPAddress ip = WiFi.localIP();
   sprintf(lcdBuffer, "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3],
           mac[2], mac[1], mac[0]);
-}
+  }
 */
 bool HttpConnection::httpGetMethod(Client &client, char *getString)
 {
@@ -155,7 +155,7 @@ bool HttpConnection::httpGetMethod(Client &client, char *getString)
   return false;
 }
 /**
-bool HomeConnection::httpPostMethod(Client *client, char *postString, JsonObject& root) {
+  bool HomeConnection::httpPostMethod(Client *client, char *postString, JsonObject& root) {
 
   if (initServerConnection(client)) {
     sprintf(httpBuffer, "POST %s HTTP/1.1\r\nHost: %s:%d\r\nContent-Length: %d\r\n%s\r\n\r\n",
@@ -169,7 +169,7 @@ bool HomeConnection::httpPostMethod(Client *client, char *postString, JsonObject
     }
   }
   return false;
-}
+  }
 ***/
 
 // https://arduinojson.org/v6/doc/serialization/
@@ -261,7 +261,7 @@ bool HttpConnection::initServerConnection(Client &client)
   else
   {
     logger->printlnLog("Connecting to .. %s:%d ..", TERM_SERVER_URL,
-                      TERM_SERVER_PORT);
+                       TERM_SERVER_PORT);
     // if there's a successful connection:
     if (client.connect(TERM_SERVER_URL, TERM_SERVER_PORT))
     {

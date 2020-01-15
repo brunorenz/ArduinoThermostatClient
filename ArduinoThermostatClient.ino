@@ -32,7 +32,7 @@ boolean BMP280 = false;
 //char temp[250];
 
 //ThermManager tm;
-#ifdef USE_MQ
+#ifdef USE_MQTT
 
 #else
 HttpConnection hc;
@@ -224,7 +224,7 @@ void setup()
   // read initial temperature values
   readTemperature(true);
   // imposto Watchdog Timer a 8 Secondi
-  Watchdog.enable(SLEEPYDOG_WAIT_TIME);
+  //Watchdog.enable(SLEEPYDOG_WAIT_TIME);
 }
 
 void setupMQTT()
@@ -670,6 +670,7 @@ void readTemperature(boolean init)
       logger.printlnLog(
           "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
           t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
+    displayStatus();          
   }
 }
 /*
@@ -887,6 +888,7 @@ bool checkLCD()
   {
     lcd.init();      //initialize the lcd
     lcd.backlight(); //open the backlight
+    lcd.display();
     //config.flagLcd = 1;
   }
   return flagLCD;
@@ -906,6 +908,7 @@ bool checkBME()
   return flagBME;
 }
 
+#ifdef USE_HTTP
 void loopREST()
 {
   // check connection
@@ -987,3 +990,4 @@ void loopREST()
   logger.printlnLog("Check FreeMemory %d", freeMemory());
   delay(WAIT_MAIN_LOOP);
 }
+#endif
