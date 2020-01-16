@@ -224,7 +224,7 @@ void setup()
   // read initial temperature values
   readTemperature(true);
   // imposto Watchdog Timer a 8 Secondi
-  //Watchdog.enable(SLEEPYDOG_WAIT_TIME);
+  Watchdog.enable(SLEEPYDOG_WAIT_TIME);
 }
 
 void setupMQTT()
