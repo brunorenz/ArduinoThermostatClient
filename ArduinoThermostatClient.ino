@@ -41,6 +41,7 @@ HttpConnection hc;
 // configuration data
 CONFIG config;
 SENSORDATA sensorData;
+SENSORDATA sensorDataLast;
 
 // LCD
 LiquidCrystal_I2C lcd(ADDRESS_LCD, 20, 4);
@@ -85,8 +86,9 @@ long timeoutCheckConfiguration;
 
 const int sensorPin = A1;
 const int relayPin = 9;
-int count = 0;
-bool willSent = 0;
+//int count = 0;
+bool willSent = false;
+bool ntpCalled = false;
 
 // GEstione LCD
 uint8_t bell[8] = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
@@ -117,56 +119,7 @@ void setup()
 
   // initialize configuration
   initConfiguration(config);
-
-  /*
-  // initialize configuration data
-  config.progLoaded = false;
-  config.serverStatus = STATUS_OFF;
-  config.clientStatus = STATUS_OFF;
-  config.key = 0;
-  config.flagLcd = 0;
-  config.flagLightSensor = 0;
-  config.flagMotionSensor = 0;
-  config.flagReleTemp = 0;
-  config.flagReleLight = 0;
-  config.flagTemperatureSensor = 0;
-  config.flagPressureSensor = 0;
-  config.flagHumiditySensor = 0;
-  config.timeZoneOffset = -1;
-  config.registered = false;
-  for (int i = 0; i < MAX_DAY; i++)
-  {
-    config.day[i].day = -1;
-    config.day[i].numProg = 0;
-  }
-  config.macAddress[0] = 0;
-  config.ipAddress[0] = 0;
-
-#ifdef FLAGLIGHT
-  config.flagLightSensor = 1;
-#endif
-#ifdef FLAGMOTION
-  config.flagMotionSensor = 1;
-#endif
-#ifdef FLAGRELEMOTION
-  config.flagReleLight = 1;
-#endif
-#ifdef FLAGRELETEMP
-  config.flagReleTemp = 1;
-#endif
-
-#ifdef BMP
-  config.flagTemperatureSensor = 1;
-  config.flagPressureSensor = 1;
-  config.flagHumiditySensor = 0;
-#endif
-
-#ifdef BME
-  config.flagTemperatureSensor = 1;
-  config.flagPressureSensor = 1;
-  config.flagHumiditySensor = 1;
-#endif
-*/
+  sensorDataLast.numItem = 0;
   // initialize I2C comunication
   Wire.begin();
   // Initialize rtc
@@ -177,27 +130,9 @@ void setup()
   if (LCD)
     config.flagLcd = 1;
 
-  // check LCD and Thermostat
-  //LCD = checkI2CAddress(ADDRESS_LCD);
-  //BMP280 = checkI2CAddress(ADDRESS_BMP280);
-  /*
-  if (LCD)
-  {
-    lcd.init();      //initialize the lcd
-    lcd.backlight(); //open the backlight
-    config.flagLcd = 1;
-  }
-  */
   // check Thermostat
   BMP280 = checkBME();
-  /*
-  if (BMP280)
-  {
-    int status = bme.begin(ADDRESS_BMP280);
-    logger.printlnLog("BME Status %d : ", status);
-    Serial.println(bme.sensorID(), 16);
-  }
-  */
+
   logger.printlnLog("ThermostatClient start...");
   logger.printlnLog("LCD status    .. %s", LCD ? "OK" : "KO");
   logger.printlnLog("BMP280 status .. %s", BMP280 ? "OK" : "KO");
@@ -248,7 +183,7 @@ void setupREST()
 
 void loop()
 {
-#ifdef WEBSOCKET
+#ifdef USE_HTTP
   loopWS();
 #else
   loopMQ();
@@ -324,6 +259,10 @@ void loopMQ()
   //bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
 
   bool wifiConnectionAvailable = checkWIFIConnection();
+  if (wifiConnectionAvailable && !ntpCalled)
+  {
+    ntpCalled = wifi.updateRTC(rtc);
+  }
   if (wifiConnectionAvailable)
   {
     bool mqttConnectionAvailable = checkMQConnection();
@@ -337,8 +276,10 @@ void loopMQ()
       bool checkSendMonitorData = (now - timeoutCallMonitor) > WAIT_CALL_MONITOR;
       if (checkSendMonitorData)
       {
-        sendMonitorData(config, sensorData);
-
+        if (checkIfToSend(sensorData, sensorDataLast))
+        {
+          sendMonitorData(config, sensorData);
+        }
         // reset temp
         readTemperature(true);
         timeoutReadTemperature = now;
@@ -431,7 +372,7 @@ void sendWillMessage()
   mqttClient.endWill();
 #endif
   logger.printlnLog("Send Will message %s", willPayload);
-  willSent = 1;
+  willSent = true;
 }
 /*
 void sendMonitorDataString(CONFIG &cfg, SENSORDATA &sensor)
@@ -462,16 +403,50 @@ void sendMonitorDataMQTT(CONFIG &cfg, SENSORDATA &sensor)
   }
 }
 
+/*
+float mabs(float f)
+{
+  return f >= 0 ? f : -f;
+}
+*/
+
+bool checkIfToSend(SENSORDATA &sensor, SENSORDATA &sensorOld)
+{
+  bool send = false;
+  if (sensor.numItem != 0)
+  {
+    float t = sensor.totalTemperature / sensor.numItem;
+    float p = sensor.totalPressure / sensor.numItem / 100.0;
+    float l = sensor.totalLight / sensor.numItem;
+    float h = sensor.humidity / sensor.numItem;
+    if (sensorOld.numItem == 0)
+    {
+      send = true;
+    }
+    else
+    {
+      send = abs(sensorOld.totalTemperature - t) > 0.5 || abs(sensorOld.totalLight - l) > 0.5;
+    }
+    if (send)
+    {
+      sensorOld.totalLight = l;
+      sensorOld.totalTemperature = t;
+      sensorOld.humidity = h;
+      sensorOld.totalPressure = p;
+      sensorOld.numItem = sensor.numItem;
+    }
+  }
+  return send;
+}
+
 void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
 {
-
-  //char jsonMessage[] = "{\"macAddress\":\"F8:F0:05:F7:DC:49\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":0,\"numSurveys\":0}";
-  char jsonMessage[200];
-
   float t = sensor.totalTemperature / sensor.numItem;
   float p = sensor.totalPressure / sensor.numItem / 100.0;
   float l = sensor.totalLight / sensor.numItem;
   float h = sensor.humidity / sensor.numItem;
+  //char jsonMessage[] = "{\"macAddress\":\"F8:F0:05:F7:DC:49\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":0,\"numSurveys\":0}";
+  char jsonMessage[200];
   sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"temperature\": %f,\"pressure\": %f,\"light\": %f,\"humidity\": %f,\"numSurveys\":%d}",
           cfg.macAddress, t, p, l, h, sensor.numItem);
   char outTopic[] = TOPIC_MONITOR;
@@ -670,7 +645,7 @@ void readTemperature(boolean init)
       logger.printlnLog(
           "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
           t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
-    displayStatus();          
+    displayStatus();
   }
 }
 /*

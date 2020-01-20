@@ -17,7 +17,7 @@ public:
   unsigned long getTime();
   void getLocalIp(char *ip, int len);
   void getMacAddress(char *mac, int len);
-  void updateRTC(RTCZero &rtc, int timeZoneOffset);
+  bool updateRTC(RTCZero &rtc, int timeZoneOffset = 0);
   bool initServerConnection(Client *client);
 
 protected:

@@ -6,9 +6,9 @@ WiFiConnection::WiFiConnection(Logging *_logger)
   rtcUpdated = false;
 }
 
-void WiFiConnection::updateRTC(RTCZero &rtc, int timeZoneOffset)
+bool WiFiConnection::updateRTC(RTCZero &rtc, int timeZoneOffset)
 {
-  if (!rtcUpdated || timeZoneOffset != 0)
+  if (!rtcUpdated) // || timeZoneOffset != 0)
   {
     unsigned long now = getTime();
     if (now > 0)
@@ -18,6 +18,7 @@ void WiFiConnection::updateRTC(RTCZero &rtc, int timeZoneOffset)
       rtcUpdated = true;
     }
   }
+  return rtcUpdated;
 }
 
 bool WiFiConnection::connect(bool wait)
