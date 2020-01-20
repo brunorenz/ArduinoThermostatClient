@@ -262,6 +262,7 @@ void loopMQ()
   if (wifiConnectionAvailable && !ntpCalled)
   {
     ntpCalled = wifi.updateRTC(rtc);
+    logger.printlnLog("Update time : %d",ntpCalled);
   }
   if (wifiConnectionAvailable)
   {
@@ -425,7 +426,10 @@ bool checkIfToSend(SENSORDATA &sensor, SENSORDATA &sensorOld)
     }
     else
     {
-      send = abs(sensorOld.totalTemperature - t) > 0.5 || abs(sensorOld.totalLight - l) > 0.5;
+      float dT = abs(sensorOld.totalTemperature - t);
+      float dL = abs(sensorOld.totalLight - l);
+      logger.printlnLog("Differenza temperatura %f - Luce %f",dT,dL);
+      send = dT > 0.5 || dL > 0.5;
     }
     if (send)
     {
@@ -692,7 +696,8 @@ void displayStatus()
   strftime(buffer, 80, "%d-%m-%Y %H:%M:%S", timeinfo);
   // get ip adress
   char lcdBuffer[3 * 4 + 2];
-  wifi.getLocalIp(lcdBuffer, sizeof(lcdBuffer));
+  memcpy(lcdBuffer,config.ipAddress,sizeof(lcdBuffer));
+  //wifi.getLocalIp(lcdBuffer, sizeof(lcdBuffer));
   logger.printlnLog("Check at %s - IP : %s - FreeMemory %d", buffer, lcdBuffer, freeMemory());
   if (LCD)
   {
@@ -718,7 +723,7 @@ void displayStatus()
         t = sensorData.totalTemperature / sensorData.numItem;
       else
         t = bme.readTemperature();
-      sprintf(line, "Temp %3.3f %cC  %c", t, c, c1);
+      sprintf(line, "Temp %3.2f %cC  %c", t, c, c1);
       lcd.setCursor(0, 3);
       lcd.print(line);
       lcd.write(0);
