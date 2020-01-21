@@ -262,7 +262,7 @@ void loopMQ()
   if (wifiConnectionAvailable && !ntpCalled)
   {
     ntpCalled = wifi.updateRTC(rtc);
-    logger.printlnLog("Update time : %d",ntpCalled);
+    logger.printlnLog("Update time : %d", ntpCalled);
   }
   if (wifiConnectionAvailable)
   {
@@ -414,47 +414,64 @@ float mabs(float f)
 bool checkIfToSend(SENSORDATA &sensor, SENSORDATA &sensorOld)
 {
   bool send = false;
-  if (sensor.numItem != 0)
+  if (sensor.numItem > 0)
   {
     float t = sensor.totalTemperature / sensor.numItem;
     float p = sensor.totalPressure / sensor.numItem / 100.0;
     float l = sensor.totalLight / sensor.numItem;
     float h = sensor.humidity / sensor.numItem;
-    if (sensorOld.numItem == 0)
+    if (t == t)
     {
-      send = true;
+      if (sensorOld.numItem == 0)
+      {
+        // primo invio
+        send = true;
+      }
+      else
+      {
+        float dT = abs(sensorOld.totalTemperature - t);
+        float dL = abs(sensorOld.totalLight - l);
+        logger.printlnLog("Differenza temperatura %f - Luce %f", dT, dL);
+        send = dT > 0.5 || dL > 0.5;
+      }
+      if (send)
+      {
+        sensorOld.totalLight = l;
+        sensorOld.totalTemperature = t;
+        sensorOld.humidity = h;
+        sensorOld.totalPressure = p;
+        sensorOld.numItem = sensor.numItem;
+      }
     }
     else
-    {
-      float dT = abs(sensorOld.totalTemperature - t);
-      float dL = abs(sensorOld.totalLight - l);
-      logger.printlnLog("Differenza temperatura %f - Luce %f",dT,dL);
-      send = dT > 0.5 || dL > 0.5;
-    }
-    if (send)
-    {
-      sensorOld.totalLight = l;
-      sensorOld.totalTemperature = t;
-      sensorOld.humidity = h;
-      sensorOld.totalPressure = p;
-      sensorOld.numItem = sensor.numItem;
-    }
+      logger.printlnLog("Dati temperatura errati!!");
   }
   return send;
 }
 
 void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
 {
-  float t = sensor.totalTemperature / sensor.numItem;
-  float p = sensor.totalPressure / sensor.numItem / 100.0;
-  float l = sensor.totalLight / sensor.numItem;
-  float h = sensor.humidity / sensor.numItem;
-  //char jsonMessage[] = "{\"macAddress\":\"F8:F0:05:F7:DC:49\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":0,\"numSurveys\":0}";
-  char jsonMessage[200];
-  sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"temperature\": %f,\"pressure\": %f,\"light\": %f,\"humidity\": %f,\"numSurveys\":%d}",
-          cfg.macAddress, t, p, l, h, sensor.numItem);
-  char outTopic[] = TOPIC_MONITOR;
-  publishMessage(jsonMessage, outTopic);
+  if (sensor.numItem > 0)
+  {
+    float t = sensor.totalTemperature / sensor.numItem;
+    float p = sensor.totalPressure / sensor.numItem / 100.0;
+    float l = sensor.totalLight / sensor.numItem;
+    float h = sensor.humidity / sensor.numItem;
+    // check if NaN
+    if (t == t)
+    {
+      //char jsonMessage[] = "{\"macAddress\":\"F8:F0:05:F7:DC:49\",\"temperature\":20.79833,\"pressure\":1013.37,\"light\":53.09245,\"humidity\":65.03451,\"statusThermostat\":0,\"numSurveys\":0}";
+      char jsonMessage[200];
+      sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"temperature\": %f,\"pressure\": %f,\"light\": %f,\"humidity\": %f,\"numSurveys\":%d}",
+              cfg.macAddress, t, p, l, h, sensor.numItem);
+      char outTopic[] = TOPIC_MONITOR;
+      publishMessage(jsonMessage, outTopic);
+    }
+    else
+      logger.printlnLog("Dati temperatura errati!!");
+  }
+  else
+    logger.printlnLog("Numero rilevazioni non valido!!");
 }
 
 /**
@@ -696,7 +713,7 @@ void displayStatus()
   strftime(buffer, 80, "%d-%m-%Y %H:%M:%S", timeinfo);
   // get ip adress
   char lcdBuffer[3 * 4 + 2];
-  memcpy(lcdBuffer,config.ipAddress,sizeof(lcdBuffer));
+  memcpy(lcdBuffer, config.ipAddress, sizeof(lcdBuffer));
   //wifi.getLocalIp(lcdBuffer, sizeof(lcdBuffer));
   logger.printlnLog("Check at %s - IP : %s - FreeMemory %d", buffer, lcdBuffer, freeMemory());
   if (LCD)
