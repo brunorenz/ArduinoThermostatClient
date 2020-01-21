@@ -112,7 +112,7 @@ bool MessageParser::preparaMonitorDataRequest(CONFIG &config, SENSORDATA &sensor
     jsonBuffer["pressure"] = sensorData.totalPressure / sensorData.numItem / 100.0;
     jsonBuffer["light"] = sensorData.totalLight / sensorData.numItem;
     jsonBuffer["humidity"] = sensorData.humidity / sensorData.numItem;
-    jsonBuffer["statusThermostat"] = config.clientStatus;
+    //jsonBuffer["statusThermostat"] = config.clientStatus;
     jsonBuffer["numSurveys"] = sensorData.numItem;
     send = true;
   }
@@ -131,6 +131,7 @@ void MessageParser::preparaWiFiRegisterRequest(CONFIG &config, DynamicJsonDocume
   jsonBuffer["flagReleLight"] = config.flagReleLight;
   jsonBuffer["macAddress"] = config.macAddress;
   jsonBuffer["ipAddress"] = config.ipAddress;
+  jsonBuffer["deviceType"] = DEVICETYPE_ARDUINO;
 }
 
 int MessageParser::checkRestError(DynamicJsonDocument &doc)

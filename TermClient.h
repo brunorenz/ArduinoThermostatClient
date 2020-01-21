@@ -49,6 +49,8 @@
 #define ADDRESS_BMP280 0x76
 #define ADDRESS_BME280 0x76
 
+#define DEVICETYPE_ARDUINO 1
+#define DEVICETYPE_SCHELLY 2
 #define MYDEBUG
 #define BME
 #define NO_BMP
