@@ -67,7 +67,7 @@ WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
 #endif
 #ifdef MQTT_1
-MQTTClient mqttClient(256);
+MQTTClient mqttClient(512);
 #endif
 
 MessageParser messageParser(&logger);
