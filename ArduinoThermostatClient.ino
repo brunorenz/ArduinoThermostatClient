@@ -711,9 +711,9 @@ void displayStatus()
   struct tm *timeinfo;
   timeinfo = localtime(&t);
   char buffer[80];
-  strftime(buffer, 80, "%d-%m-%Y %H:%M:%S", timeinfo);
+  strftime(buffer, 80, "%d-%m-%Y %H:%M", timeinfo);
   // get ip adress
-  char lcdBuffer[3 * 4 + 2];
+  char lcdBuffer[20];
   memcpy(lcdBuffer, config.ipAddress, sizeof(lcdBuffer));
   //wifi.getLocalIp(lcdBuffer, sizeof(lcdBuffer));
   logger.printlnLog("Check at %s - IP : %s - FreeMemory %d", buffer, lcdBuffer, freeMemory());
@@ -734,7 +734,7 @@ void displayStatus()
     lcd.print(line);
     if (BMP280)
     {
-      lcd.createChar(0, bell);
+      //lcd.createChar(0, bell);
       char c = (char)223;
       char c1 = (char)0;
       float t;
@@ -742,7 +742,7 @@ void displayStatus()
         t = sensorData.totalTemperature / sensorData.numItem;
       else
         t = bme.readTemperature();
-      snprintf(line, 20, "Temp %3.2f %cC  %c %s", t, c, c1,blank);
+      sprintf(line,"Temp %3.2f %cC", t, c);
       lcd.setCursor(0, 3);
       lcd.print(line);
       lcd.write(0);
@@ -888,6 +888,7 @@ bool checkLCD()
     lcd.init();      //initialize the lcd
     lcd.backlight(); //open the backlight
     lcd.display();
+    lcd.createChar(0, bell);
     //config.flagLcd = 1;
   }
   return flagLCD;
