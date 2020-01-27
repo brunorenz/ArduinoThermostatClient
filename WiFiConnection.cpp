@@ -78,7 +78,7 @@ void WiFiConnection::disconnect()
 unsigned long WiFiConnection::getTime()
 {
   unsigned long epoch;
-  int numberOfTries = 0, maxTries = 6;
+  int numberOfTries = 0, maxTries = 12;
   do
   {
     epoch = WiFi.getTime();

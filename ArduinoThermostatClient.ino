@@ -719,13 +719,14 @@ void displayStatus()
   logger.printlnLog("Check at %s - IP : %s - FreeMemory %d", buffer, lcdBuffer, freeMemory());
   if (LCD)
   {
+    //lcd.clear();
     char line[20];
-
+    char blank[20] = "        ";
     lcd.setCursor(0, 0);
     lcd.print("TermClient");
     // display ip adress
     lcd.setCursor(0, 1);
-    sprintf(line, "IP %s", lcdBuffer);
+    snprintf(line, 20, "IP %s%s", lcdBuffer,blank);
     lcd.print(line);
     // display time from WIFI
     lcd.setCursor(0, 2);
@@ -741,7 +742,7 @@ void displayStatus()
         t = sensorData.totalTemperature / sensorData.numItem;
       else
         t = bme.readTemperature();
-      sprintf(line, "Temp %3.2f %cC  %c", t, c, c1);
+      snprintf(line, 20, "Temp %3.2f %cC  %c %s", t, c, c1,blank);
       lcd.setCursor(0, 3);
       lcd.print(line);
       lcd.write(0);
