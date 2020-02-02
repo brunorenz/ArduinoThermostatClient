@@ -289,19 +289,6 @@ void loopMQ()
       }
     }
   }
-  if (wifiConnectionAvailable)
-  {
-    //wifi.updateRTC(rtc, config.timeZoneOffset);
-    /*
-    unsigned long now = wifi.getTime();
-    if (now > 0)
-    {
-      now -= config.timeZoneOffset * 60;
-      rtc.setEpoch(now);
-    }
-    logger.printlnLog("Time %d - offset %d",now,config.timeZoneOffset);
-    */
-  }
 
   // read sensor data
   bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
@@ -333,7 +320,7 @@ void loopMQ()
   }
 #endif
 
-  logger.printlnLog("Check FreeMemory %d", freeMemory());
+  //logger.printlnLog("Check FreeMemory %d", freeMemory());
 
 #ifdef MQTT_1
   mqttClient.loop();
@@ -550,6 +537,7 @@ void getCurrentProgrammingRecord(PROG_TIME &progRecord, CONFIG &conf)
 /**
    Verifica temperatura ed in funzione di programmazione determina se accendere o meno
 */
+/**
 bool checkThermostatStatus(float cT, CONFIG &conf, boolean connectionAvailable)
 {
   bool on = false;
@@ -591,9 +579,11 @@ bool checkThermostatStatus(float cT, CONFIG &conf, boolean connectionAvailable)
                     cT, tempToCheck, conf.serverStatus, on);
   return on;
 }
+**/
 /**
    Retrive managed temperature according curent programming and status
 */
+/**
 float getManagedTemperature(int pryDisp, CONFIG &conf)
 {
   // se priorità dispositivo = Default uso dispositivo locale
@@ -634,7 +624,7 @@ float getManagedTemperature(int pryDisp, CONFIG &conf)
     tempToCheck = conf.minTemp;
   return tempToCheck;
 }
-
+**/
 /**
    Read current sensor data
 */
@@ -651,22 +641,27 @@ void readTemperature(boolean init)
   }
   if (BMP280)
   {
-    sensorData.numItem++;
-    float p = bme.readPressure();
     float t = bme.readTemperature();
-    float l = (float)analogRead(sensorPin) / 10.24;
-    sensorData.totalTemperature += t;
-    sensorData.totalPressure += p;
-    sensorData.totalLight += l;
+    if (t == t)
+    {
+      sensorData.numItem++;
+      float p = bme.readPressure();
+
+      float l = (float)analogRead(sensorPin) / 10.24;
+      sensorData.totalTemperature += t;
+      sensorData.totalPressure += p;
+      sensorData.totalLight += l;
 #ifdef BME
-    float u = bme.readHumidity();
-    sensorData.humidity += u;
+      float u = bme.readHumidity();
+      sensorData.humidity += u;
 #endif
-    sensorData.currentTemperature = sensorData.totalTemperature / sensorData.numItem;
-    if (true)
-      logger.printlnLog(
-          "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
-          t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
+      sensorData.currentTemperature = sensorData.totalTemperature / sensorData.numItem;
+
+      if (true)
+        logger.printlnLog(
+            "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
+            t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
+    }
     displayStatus();
   }
 }
@@ -726,7 +721,7 @@ void displayStatus()
     lcd.print("TermClient");
     // display ip adress
     lcd.setCursor(0, 1);
-    snprintf(line, 20, "IP %s%s", lcdBuffer,blank);
+    snprintf(line, 20, "IP %s%s", lcdBuffer, blank);
     lcd.print(line);
     // display time from WIFI
     lcd.setCursor(0, 2);
@@ -742,14 +737,11 @@ void displayStatus()
         t = sensorData.totalTemperature / sensorData.numItem;
       else
         t = bme.readTemperature();
-      sprintf(line,"Temp %3.2f %cC", t, c);
+      sprintf(line, "Temp %3.2f %cC", t, c);
       lcd.setCursor(0, 3);
       lcd.print(line);
       lcd.write(0);
     }
-  }
-  else
-  {
   }
 }
 
