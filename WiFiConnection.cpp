@@ -6,6 +6,7 @@ WiFiConnection::WiFiConnection(Logging *_logger)
   rtcUpdated = false;
 }
 
+#ifdef ARDUINO_MKR1000
 bool WiFiConnection::updateRTC(RTCZero &rtc, int timeZoneOffset)
 {
   if (!rtcUpdated) // || timeZoneOffset != 0)
@@ -20,6 +21,7 @@ bool WiFiConnection::updateRTC(RTCZero &rtc, int timeZoneOffset)
   }
   return rtcUpdated;
 }
+#endif
 
 bool WiFiConnection::connect(bool wait)
 {
@@ -54,7 +56,9 @@ bool WiFiConnection::connect(bool wait)
       logger->printlnLog(
           "Connection failed : status : %d", status);
     // Set Low Power Mode
+    #ifdef ARDUINO_MKR1000
     WiFi.lowPowerMode();
+    #endif
   }
   return status == WL_CONNECTED;
 }
@@ -75,6 +79,8 @@ void WiFiConnection::disconnect()
   WiFi.disconnect();
 }
 
+
+#ifdef ARDUINO_MKR1000
 unsigned long WiFiConnection::getTime()
 {
   unsigned long epoch;
@@ -86,9 +92,11 @@ unsigned long WiFiConnection::getTime()
   } while ((epoch == 0) && (numberOfTries < maxTries));
   return epoch;
 }
+#endif
 
 int WiFiConnection::getConnectionStatus()
 {
+  Serial.print(" ");
   return WiFi.status();
 }
 

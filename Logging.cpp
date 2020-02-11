@@ -3,15 +3,26 @@
 Logging::Logging()
 {
   available = Serial;
+  #ifdef ARDUINO_MKR1000
   __rtc = NULL;
+  #endif
 }
 
+
+#ifdef ARDUINO_MKR1000
 Logging::Logging(RTCZero *rtc)
 {
   available = Serial;
   __rtc = rtc;
 }
 
+void Logging::setRTC(RTCZero *rtc)
+{
+  __rtc = rtc;
+}
+#endif
+
+#ifdef ARDUINO_MKR1000
 void Logging::formatData(char *buffer)
 {
   if (__rtc != NULL)
@@ -25,6 +36,7 @@ void Logging::formatData(char *buffer)
   else
     sprintf(buffer, "NOTIME");
 }
+#endif
 
 bool Logging::isLogEnabled()
 {
@@ -51,11 +63,13 @@ void Logging::printLog(const char *format, ...)
       va_start(args, format);
       vsnprintf(printBuffer, LOG_BUFFER_SIZE, format, args);
       va_end(args);
+      #ifdef ARDUINO_MKR1000
       if (__rtc != NULL)
       {
         formatData(bufferData);
         Serial.print(bufferData);
       }
+      #endif
       //Serial.print(sizeof(printBuffer));
       //Serial.print(" ");
       Serial.print(printBuffer);
@@ -67,10 +81,6 @@ void Logging::printLog(const char *format, ...)
 #endif
 }
 
-void Logging::setRTC(RTCZero *rtc)
-{
-  __rtc = rtc;
-}
 
 void Logging::printlnLog(const char *format, ...)
 {
@@ -87,11 +97,13 @@ void Logging::printlnLog(const char *format, ...)
 
       vsnprintf(printBuffer, LOG_BUFFER_SIZE, format, args);
       va_end(args);
+      #ifdef ARDUINO_MKR1000
       if (__rtc != NULL)
       {
         formatData(bufferData);
         Serial.print(bufferData);
       }
+      #endif
       //Serial.print(strlen(printBuffer));
       //Serial.print(" ");
       Serial.println(printBuffer);

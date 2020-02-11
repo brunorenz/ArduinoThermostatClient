@@ -1,6 +1,13 @@
 #ifndef TermClient_h
 #define TermClient_h
 
+#define ESP8266
+
+#ifdef ESP8266
+  #define ARDUINO_ESP8266
+#else
+  #define ARDUINO_MKR1000
+#endif
 /**
   TermClient constant header
 */
@@ -10,9 +17,6 @@
 #define WEBSOCKET_
 #define REST_OFF
 #define LOCAL_
-
-//static char TERM_SERVER_URL[] = "192.168.0.106";  // server address
-//int TERM_SERVER_PORT = 8100;
 
 #define ONE_HOUR 3600
 #define TERM_SERVER_URL_REMOTE "192.168.0.120"

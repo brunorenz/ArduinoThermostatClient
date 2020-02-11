@@ -2,9 +2,13 @@
 #define Logging_h
 
 #include "TermClient.h"
-//#include <Arduino.h>
 #include <stdarg.h>
+#include <stdio.h>
+//#include "hardwareSerial.h"
+
+#ifdef ARDUINO_MKR1000
 #include <RTCZero.h>
+#endif
 #include <time.h>
 
 #define LOG_BUFFER_SIZE 500
@@ -13,18 +17,22 @@ class Logging
 {
 public:
   Logging();
+  #ifdef ARDUINO_MKR1000
   Logging(RTCZero *rtc);
+  void setRTC(RTCZero *rtc);
+  #endif
   void printLog(const char *format, ...);
   void printlnLog(const char *format, ...);
-  void setRTC(RTCZero *rtc);
+  
   bool isLogEnabled();
 
 private:
-  //void printLog(const char *format, boolean nl , ...);
-  //void printLog(bool nl, const char *format, va_list &args);
   bool available = false;
+  #ifdef ARDUINO_MKR1000
   RTCZero *__rtc;
-  void formatData(char *buffer);
+  void formatData(char *buffer);  
+  #endif
+  
   char bufferData[80];
 
 #ifndef MALLOC

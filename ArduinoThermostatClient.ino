@@ -2,10 +2,9 @@
   TermClient main module
 */
 
-#include <Adafruit_SleepyDog.h>
+
 #include "TermClient.h"
 #include "HttpConnection.h"
-//#include "ThermManager.h"
 #include "MessageParser.h"
 #include "MemoryFree.h"
 #include "Logging.h"
@@ -13,7 +12,10 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <LiquidCrystal_I2C.h>
-#include <RTCZero.h>
+#ifdef ARDUINO_MKR1000
+#include <Adafruit_SleepyDog.h>
+#endif
+
 #include <time.h>
 #include <string.h>
 #include <ArduinoJson.h>
@@ -58,8 +60,10 @@ Adafruit_BME280 bme;
 #endif
 
 Logging logger;
+#ifdef ARDUINO_MKR1000
+#include <RTCZero.h>
 RTCZero rtc;
-
+#endif
 WiFiConnection wifi(&logger);
 
 WiFiClient wifiClient;
@@ -124,8 +128,10 @@ void setup()
   // initialize I2C comunication
   Wire.begin();
   // Initialize rtc
-  rtc.begin();
-  logger.setRTC(&rtc);
+  
+  #ifdef ARDUINO_MKR1000
+rtc.begin();  logger.setRTC(&rtc);
+  #endif
   // check LCD
   LCD = checkLCD();
   if (LCD)
@@ -160,7 +166,9 @@ void setup()
   // read initial temperature values
   readTemperature(true);
   // imposto Watchdog Timer a 8 Secondi
+  #ifdef ARDUINO_MKR1000
   Watchdog.enable(SLEEPYDOG_WAIT_TIME);
+  #endif
 }
 
 void setupMQTT()
@@ -260,11 +268,13 @@ void loopMQ()
   //bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
 
   bool wifiConnectionAvailable = checkWIFIConnection();
+  #ifdef ARDUINO_MKR1000
   if (wifiConnectionAvailable && !ntpCalled)
   {
     ntpCalled = wifi.updateRTC(rtc);
     logger.printlnLog("Update time : %d", ntpCalled);
   }
+  #endif
   if (wifiConnectionAvailable)
   {
     bool mqttConnectionAvailable = checkMQConnection();
@@ -331,8 +341,9 @@ void loopMQ()
 
   delay(WAIT_MAIN_LOOP);
   // Watchdog Timer
+  #ifdef ARDUINO_MKR1000
   Watchdog.reset();
-
+  #endif
   // check WiFi Connection
   // if true check MQ Connection
   // if true WifI WiFiRegister
@@ -502,7 +513,7 @@ void publishMessage(char *message, char *topic)
 
 /**
   Recupera record di programmazione corrente in base a giorno / ora
-*/
+
 void getCurrentProgrammingRecord(PROG_TIME &progRecord, CONFIG &conf)
 {
   // get current day and time
@@ -533,7 +544,7 @@ void getCurrentProgrammingRecord(PROG_TIME &progRecord, CONFIG &conf)
   logger.printlnLog("Day %d - Time %d -> Programming Temp %f - IdDispPry %d", day,
                     tnow, progRecord.minTemp, progRecord.priorityDisp);
 }
-
+*/
 /**
    Verifica temperatura ed in funzione di programmazione determina se accendere o meno
 */
@@ -700,6 +711,7 @@ bool checkConfiguration(CONFIG *conf, bool connectionAvailable)
 */
 void displayStatus()
 {
+#ifdef ARDUINO_MKR1000  
   // Get Time
   //time_t t = tm.getWiFiTime(); //hc.getTime() + ONE_HOUR;
   time_t t = rtc.getEpoch();
@@ -743,6 +755,7 @@ void displayStatus()
       lcd.write(0);
     }
   }
+#endif  
 }
 
 void onMqttMessageAdvanced(MQTTClient *client, char topic[], char payload[], int payload_length)
@@ -756,7 +769,9 @@ void onMqttMessageAdvanced(MQTTClient *client, char topic[], char payload[], int
     message[payload_length] = '\0';
     logger.printlnLog("Letto da Topic %s messaggio %s", topic, message);
     messageParser.updateConfigurationResponse(config, message);
+    #ifdef ARDUINO_MKR1000
     wifi.updateRTC(rtc, config.timeZoneOffset);
+    #endif
   }
   else
   {

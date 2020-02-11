@@ -3,7 +3,6 @@
 
 #define ARDUINOJSON_USE_LONG_LONG 1
 
-#include <RTCZero.h>
 #include <ArduinoJson.h>
 #include <stdarg.h>
 #include <string.h>
@@ -21,7 +20,6 @@ public:
 private:
   int checkRestError(DynamicJsonDocument &doc);
   bool deserialize(DynamicJsonDocument &doc, char *message);
-  //RTCZero *rtc;
   Logging *logger;
 };
 #endif
