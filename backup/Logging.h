@@ -17,22 +17,22 @@ class Logging
 {
 public:
   Logging();
-  #ifdef ARDUINO_MKR1000
+#ifdef ARDUINO_MKR1000
   Logging(RTCZero *rtc);
   void setRTC(RTCZero *rtc);
-  #endif
+#endif
   void printLog(const char *format, ...);
   void printlnLog(const char *format, ...);
-  
+
   bool isLogEnabled();
 
 private:
   bool available = false;
-  #ifdef ARDUINO_MKR1000
+#ifdef ARDUINO_MKR1000
   RTCZero *__rtc;
-  void formatData(char *buffer);  
-  #endif
-  
+  void formatData(char *buffer);
+#endif
+
   char bufferData[80];
 
 #ifndef MALLOC

@@ -1,7 +1,7 @@
 #ifndef TermClient_h
 #define TermClient_h
 
-#define ESP8266
+#define ESP8266_
 
 #ifdef ESP8266
   #define ARDUINO_ESP8266
