@@ -137,11 +137,10 @@ void setup()
 #endif
   // check LCD
 
-#ifdef ARDUINO_MKR1000
   LCD = checkLCD();
   if (LCD)
     config.flagLcd = 1;
-#endif
+
   // check Thermostat
   BMP280 = checkBME();
 
@@ -891,9 +890,10 @@ void initConfiguration(CONFIG &cfg)
 /**
  * initialize LCD
  **/
+ 
 bool checkLCD()
 {
-
+#ifdef ARDUINO_MKR1000
   bool flagLCD = checkI2CAddress(ADDRESS_LCD);
   if (flagLCD)
   {
@@ -904,6 +904,9 @@ bool checkLCD()
     //config.flagLcd = 1;
   }
   return flagLCD;
+#else
+  return false;
+#endif  
 }
 
 /**
