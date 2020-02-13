@@ -84,14 +84,14 @@ float getManagedTemperature(int pryDisp, CONFIG *conf);
 bool checkConfiguration(CONFIG *conf, bool connectionAvailable);
 bool checkThermostatStatus(float cT, CONFIG &conf, boolean connectionAvailable);
 void loopREST();
-void initConfiguration(CONFIG &cfg);
+void initConfiguration(CONFIG &cfg, bool bme);
 
 long timeoutCallMonitor;
 long timeoutReadTemperature;
 long timeoutSetTemperatureRele;
 long timeoutCheckConfiguration;
 
-const int sensorPin = A1;
+const int sensorPin = A0;
 const int relayPin = 9;
 //int count = 0;
 bool willSent = false;
@@ -119,13 +119,14 @@ uint8_t checkServerConnection(WiFiClient &client)
 void setup()
 {
 
+  // init SETUP
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
   // wait serial to start
   delay(2000);
 
-  // initialize configuration
-  initConfiguration(config);
   sensorDataLast.numItem = 0;
   // initialize I2C comunication
   Wire.begin();
@@ -148,13 +149,19 @@ void setup()
   logger.printlnLog("LCD status    .. %s", LCD ? "OK" : "KO");
   logger.printlnLog("BMP280 status .. %s", BMP280 ? "OK" : "KO");
 
-  pinMode(LED_BUILTIN, OUTPUT);
+  // initialize configuration
+  initConfiguration(config, BMP280);
+
+  //pinMode(LED_BUILTIN, OUTPUT);
 #ifdef FLAGRELETEMP
   // SET Pin for RELE
   pinMode(relayPin, OUTPUT);
 #endif
+
+#ifdef ARDUINO_MKR1000
   // Set resolution for analog read
   analogReadResolution(10);
+#endif
 
 #ifdef USE_MQTT
   setupMQTT();
@@ -169,7 +176,8 @@ void setup()
   timeoutSetTemperatureRele = 0;
   // read initial temperature values
   readTemperature(true);
-// imposto Watchdog Timer a 8 Secondi
+  // imposto Watchdog Timer a 8 Secondi
+  digitalWrite(LED_BUILTIN, LOW);
 #ifdef ARDUINO_MKR1000
   Watchdog.enable(SLEEPYDOG_WAIT_TIME);
 #endif
@@ -837,7 +845,7 @@ void onMqttMessage(int messageSize)
 /**
  * Initialize configuration data
  */
-void initConfiguration(CONFIG &cfg)
+void initConfiguration(CONFIG &cfg, bool bme)
 {
   // initialize configuration data
   cfg.progLoaded = false;
@@ -875,22 +883,25 @@ void initConfiguration(CONFIG &cfg)
   cfg.flagReleTemp = 1;
 #endif
 
+  if (bme)
+  {
 #ifdef BMP
-  cfg.flagTemperatureSensor = 1;
-  cfg.flagPressureSensor = 1;
-  cfg.flagHumiditySensor = 0;
+    cfg.flagTemperatureSensor = 1;
+    cfg.flagPressureSensor = 1;
+    cfg.flagHumiditySensor = 0;
 #endif
 
 #ifdef BME
-  cfg.flagTemperatureSensor = 1;
-  cfg.flagPressureSensor = 1;
-  cfg.flagHumiditySensor = 1;
+    cfg.flagTemperatureSensor = 1;
+    cfg.flagPressureSensor = 1;
+    cfg.flagHumiditySensor = 1;
 #endif
+  }
 }
 /**
  * initialize LCD
  **/
- 
+
 bool checkLCD()
 {
 #ifdef ARDUINO_MKR1000
@@ -906,7 +917,7 @@ bool checkLCD()
   return flagLCD;
 #else
   return false;
-#endif  
+#endif
 }
 
 /**
