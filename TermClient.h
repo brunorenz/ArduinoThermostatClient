@@ -3,8 +3,18 @@
 
 #define ESP8266_
 
+#define NO_MAINCONTROLLER
+#define LIGTH
+#define NO_MOTION
+#define MYDEBUG
+#define BME
+#define NO_BMP
+
 #ifdef ESP8266
   #define ARDUINO_ESP8266
+  #undef LIGTH
+  #undef BME
+  #define BMP
 #else
   #define ARDUINO_MKR1000
 #endif
@@ -55,9 +65,6 @@
 
 #define DEVICETYPE_ARDUINO 1
 #define DEVICETYPE_SCHELLY 2
-#define MYDEBUG
-#define BME
-#define NO_BMP
 
 #define GET_TIMEOUT 6000
 #define GET_JSON_BUFFER 3000
@@ -91,9 +98,9 @@
 #define POST_MONITOR "/therm/rest/monitor"
 #define POST_REGISTER "/therm/rest/wifiRegister"
 
-#define NO_MAINCONTROLLER
-#define LIGTH
-#define NO_MOTION
+// #define NO_MAINCONTROLLER
+// #define LIGTH
+// #define NO_MOTION
 
 #ifdef LIGTH
 #define FLAGLIGHT

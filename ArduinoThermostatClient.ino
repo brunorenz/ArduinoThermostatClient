@@ -677,6 +677,8 @@ void readTemperature(boolean init)
 #ifdef BME
       float u = bme.readHumidity();
       sensorData.humidity += u;
+#else
+      float u = 0.0;      
 #endif
       sensorData.currentTemperature = sensorData.totalTemperature / sensorData.numItem;
 
