@@ -92,11 +92,13 @@ long timeoutSetTemperatureRele;
 long timeoutCheckConfiguration;
 
 const int sensorPin = A0;
+const int motionPin = 2;
 const int relayPin = 9;
 //int count = 0;
 bool willSent = false;
 bool ntpCalled = false;
 
+int motionStatus = 0;
 // GEstione LCD
 uint8_t bell[8] = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
 
@@ -151,6 +153,10 @@ void setup()
 
   // initialize configuration
   initConfiguration(config, BMP280);
+
+#ifdef MOTION
+  pinMode(motionPin, INPUT);
+#endif
 
   //pinMode(LED_BUILTIN, OUTPUT);
 #ifdef FLAGRELETEMP
@@ -303,9 +309,9 @@ void loopMQ()
         if (checkIfToSend(sensorData, sensorDataLast))
         {
           sendMonitorData(config, sensorData);
+          readTemperature(true);
         }
         // reset temp
-        readTemperature(true);
         timeoutReadTemperature = now;
         timeoutCallMonitor = now;
       }
@@ -319,6 +325,16 @@ void loopMQ()
     readTemperature(false);
     timeoutReadTemperature = now;
   }
+
+#ifdef MOTION
+  int signal = digitalRead(motionPin); 
+  logger.printlnLog("Motion sensor : %d",signal);
+  if (signal != motionStatus)
+  {
+    sendMotionData(config,signal);
+    motionStatus = signal;
+  }
+#endif  
 
 #ifdef FLAGRELETEMP
   bool checkReleTemperature = (now - timeoutSetTemperatureRele) > WAIT_SETRELE_TEMPERATURE;
@@ -415,12 +431,12 @@ void sendMonitorDataMQTT(CONFIG &cfg, SENSORDATA &sensor)
   }
 }
 
-/*
+
 float mabs(float f)
 {
   return f >= 0 ? f : -f;
 }
-*/
+
 
 bool checkIfToSend(SENSORDATA &sensor, SENSORDATA &sensorOld)
 {
@@ -440,10 +456,11 @@ bool checkIfToSend(SENSORDATA &sensor, SENSORDATA &sensorOld)
       }
       else
       {
-        float dT = abs(sensorOld.totalTemperature - t);
-        float dL = abs(sensorOld.totalLight - l);
+        float dT = mabs(sensorOld.totalTemperature - t);
+        float dL = mabs(sensorOld.totalLight - l);
+        //logger.printlnLog("Last %f - Now %f - Diff %f", sensorOld.totalTemperature,t,(sensorOld.totalTemperature - t));
         logger.printlnLog("Differenza temperatura %f - Luce %f", dT, dL);
-        send = dT > 0.5 || dL > 0.5;
+        send = dT > 0.1 || dL > 0.2 || sensor.numItem > 20;
       }
       if (send)
       {
@@ -459,6 +476,17 @@ bool checkIfToSend(SENSORDATA &sensor, SENSORDATA &sensorOld)
   }
   return send;
 }
+
+
+void sendMotionData(CONFIG &cfg, int on)
+{
+  char jsonMessage[200];
+        sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"motion\": %d}",
+              cfg.macAddress, on);
+      char outTopic[] = TOPIC_MOTION;
+      publishMessage(jsonMessage, outTopic);
+}
+
 
 void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
 {

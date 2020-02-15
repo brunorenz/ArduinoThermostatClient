@@ -4,19 +4,24 @@
 #define ESP8266_
 
 #define NO_MAINCONTROLLER
-#define LIGTH
+#define NO_LIGTH
 #define NO_MOTION
 #define MYDEBUG
-#define BME
+#define NO_BME
 #define NO_BMP
 
 #ifdef ESP8266
   #define ARDUINO_ESP8266
-  #undef LIGTH
-  #undef BME
-  #define BMP
+  #define MOTION
+  #define LIGTH_
+  #define BME
+//  #undef LIGTH
+//  #undef BME
+//  #define BMP
 #else
   #define ARDUINO_MKR1000
+  #define LIGTH
+  #define BME
 #endif
 /**
   TermClient constant header
@@ -41,7 +46,8 @@
  */
 #define TERM_SERVER_MQ "192.168.0.120"
 #define TOPIC_WIFI "ThermApp/wifiRegister"
-#define TOPIC_MONITOR "ThermApp/monitoData"
+#define TOPIC_MONITOR "ThermApp/monitorData"
+#define TOPIC_MOTION "ThermApp/motionSensor"
 #define TOPIC_LASTWILL "ThermApp/lastWill"
 #define TOPIC_GETPROG "ThermApp/getProgramming"
 #define TOPIC_UPDATEPROG "ThermApp/updateProgramming"
@@ -104,15 +110,16 @@
 
 #ifdef LIGTH
 #define FLAGLIGHT
+#endif
+
 #ifdef MOTION
 #define FLAGMOTION
-#define FLAGRELEMOTION
 #endif
-#else
-#endif
+
 
 #ifdef MAINCONTROLLER
 #define FLAGRELETEMP
+#define FLAGRELEMOTION
 #else
 #endif
 
