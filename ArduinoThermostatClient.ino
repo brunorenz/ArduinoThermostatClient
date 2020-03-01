@@ -156,6 +156,7 @@ void setup()
 
 #ifdef MOTION
   pinMode(motionPin, INPUT);
+  digitalWrite(motionPin,LOW);
 #endif
 
   //pinMode(LED_BUILTIN, OUTPUT);

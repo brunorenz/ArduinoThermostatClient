@@ -13,7 +13,7 @@
 #ifdef ESP8266
   #define ARDUINO_ESP8266
   #define MOTION
-  #define LIGTH_
+  #define LIGTH
   #define BME
 //  #undef LIGTH
 //  #undef BME
