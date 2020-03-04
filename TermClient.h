@@ -34,7 +34,7 @@
 #define LOCAL_
 
 #define ONE_HOUR 3600
-#define TERM_SERVER_URL_REMOTE "192.168.0.120"
+#define TERM_SERVER_URL_REMOTE "192.168.0.101"
 #define TERM_SERVER_URL_LOCAL "192.168.0.103"
 #ifdef LOCAL
 #define TERM_SERVER_URL TERM_SERVER_URL_LOCAL
@@ -44,7 +44,7 @@
 /*
  * MQTT definition
  */
-#define TERM_SERVER_MQ "192.168.0.120"
+#define TERM_SERVER_MQ "192.168.0.101"
 #define TOPIC_WIFI "ThermApp/wifiRegister"
 #define TOPIC_MONITOR "ThermApp/monitorData"
 #define TOPIC_MOTION "ThermApp/motionSensor"

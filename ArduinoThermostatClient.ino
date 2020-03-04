@@ -461,7 +461,7 @@ bool checkIfToSend(SENSORDATA &sensor, SENSORDATA &sensorOld)
         float dL = mabs(sensorOld.totalLight - l);
         //logger.printlnLog("Last %f - Now %f - Diff %f", sensorOld.totalTemperature,t,(sensorOld.totalTemperature - t));
         logger.printlnLog("Differenza temperatura %f - Luce %f", dT, dL);
-        send = dT > 0.1 || dL > 0.2 || sensor.numItem > 20;
+        send = dT > 0.1 || dL > 0.2 || sensor.numItem > 15;
       }
       if (send)
       {
