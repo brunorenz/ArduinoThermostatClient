@@ -6,7 +6,7 @@
 #define NO_MAINCONTROLLER
 #define NO_LIGTH
 #define NO_MOTION
-#define MYDEBUG
+#define MYDEBUG_
 #define NO_BME
 #define NO_BMP
 

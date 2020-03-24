@@ -92,13 +92,20 @@ long timeoutSetTemperatureRele;
 long timeoutCheckConfiguration;
 
 const int sensorPin = A0;
-const int motionPin = 2;
+const int motionPin = D7;
 const int relayPin = 9;
+
+#ifdef ARDUINO_MKR1000  
+  const int ledPIN = LED_BUILTIN;
+#else
+  const int ledPIN = LED_BUILTIN;
+#endif
+
 //int count = 0;
 bool willSent = false;
 bool ntpCalled = false;
 
-int motionStatus = 0;
+int motionStatus = -1;
 // GEstione LCD
 uint8_t bell[8] = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
 
@@ -120,15 +127,15 @@ uint8_t checkServerConnection(WiFiClient &client)
 
 void setup()
 {
-
-  // init SETUP
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
   // wait serial to start
   delay(2000);
 
+  // init SETUP
+  pinMode(ledPIN, OUTPUT);
+  digitalWrite(ledPIN, LOW);
+  
   sensorDataLast.numItem = 0;
   // initialize I2C comunication
   Wire.begin();
@@ -150,13 +157,13 @@ void setup()
   logger.printlnLog("ThermostatClient start...");
   logger.printlnLog("LCD status    .. %s", LCD ? "OK" : "KO");
   logger.printlnLog("BMP280 status .. %s", BMP280 ? "OK" : "KO");
-
+  logger.printlnLog("Default Led %d - ESP Led %d",LED_BUILTIN,D7);
   // initialize configuration
   initConfiguration(config, BMP280);
 
 #ifdef MOTION
   pinMode(motionPin, INPUT);
-  digitalWrite(motionPin,LOW);
+  //digitalWrite(motionPin, LOW);
 #endif
 
   //pinMode(LED_BUILTIN, OUTPUT);
@@ -184,7 +191,7 @@ void setup()
   // read initial temperature values
   readTemperature(true);
   // imposto Watchdog Timer a 8 Secondi
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(ledPIN, HIGH);
 #ifdef ARDUINO_MKR1000
   Watchdog.enable(SLEEPYDOG_WAIT_TIME);
 #endif
@@ -328,14 +335,17 @@ void loopMQ()
   }
 
 #ifdef MOTION
-  int signal = digitalRead(motionPin); 
-  logger.printlnLog("Motion sensor : %d",signal);
+  int signal = digitalRead(motionPin);
+  int led = signal == HIGH ? LOW : HIGH;
+  logger.printlnLog("Motion sensor : %d : LED %d", signal,led);
+
+  digitalWrite(ledPIN, led);
   if (signal != motionStatus)
-  {
-    sendMotionData(config,signal);
+  {    
+    sendMotionData(config, signal);
     motionStatus = signal;
   }
-#endif  
+#endif
 
 #ifdef FLAGRELETEMP
   bool checkReleTemperature = (now - timeoutSetTemperatureRele) > WAIT_SETRELE_TEMPERATURE;
@@ -432,12 +442,10 @@ void sendMonitorDataMQTT(CONFIG &cfg, SENSORDATA &sensor)
   }
 }
 
-
 float mabs(float f)
 {
   return f >= 0 ? f : -f;
 }
-
 
 bool checkIfToSend(SENSORDATA &sensor, SENSORDATA &sensorOld)
 {
@@ -478,16 +486,14 @@ bool checkIfToSend(SENSORDATA &sensor, SENSORDATA &sensorOld)
   return send;
 }
 
-
 void sendMotionData(CONFIG &cfg, int on)
 {
   char jsonMessage[200];
-        sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"motion\": %d}",
-              cfg.macAddress, on);
-      char outTopic[] = TOPIC_MOTION;
-      publishMessage(jsonMessage, outTopic);
+  sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"motion\": %d}",
+          cfg.macAddress, on);
+  char outTopic[] = TOPIC_MOTION;
+  publishMessage(jsonMessage, outTopic);
 }
-
 
 void sendMonitorData(CONFIG &cfg, SENSORDATA &sensor)
 {
@@ -707,7 +713,7 @@ void readTemperature(boolean init)
       float u = bme.readHumidity();
       sensorData.humidity += u;
 #else
-      float u = 0.0;      
+      float u = 0.0;
 #endif
       sensorData.currentTemperature = sensorData.totalTemperature / sensorData.numItem;
 
