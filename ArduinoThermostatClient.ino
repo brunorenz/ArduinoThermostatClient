@@ -265,7 +265,7 @@ bool checkMQConnection()
     // set a will message, used by the broker when the connection dies unexpectantly
     // you must know the size of the message before hand, and it must be set before connecting
 #ifdef MQTT_1
-    //sendWillMessage();
+    sendWillMessage();
     rc = mqttClient.connect(config.macAddress);
     if (!rc)
       logger.printlnLog("MQTT connection failed!");
@@ -507,11 +507,12 @@ void sendMotionData(CONFIG &cfg, SENSORDATA &sensor, int on)
   char jsonMessage[200];
   float l = -1;
   if (sensor.numItem > 0)
-  {
+  {    
     l = sensor.totalLight / sensor.numItem;
   }
-  sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"motion\": %d,\"light\": %f}",
-          cfg.macAddress, on, l);
+  float cl = (float)analogRead(sensorPin) / 10.24;
+  sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"motion\": %d,\"light\": %f,\"mediumLight\": %f}",
+          cfg.macAddress, on, cl,l);
   char outTopic[] = TOPIC_MOTION;
   publishMessage(jsonMessage, outTopic);
 }
