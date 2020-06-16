@@ -4,24 +4,24 @@
 #define ESP8266_
 
 #define NO_MAINCONTROLLER
-#define NO_LIGTH
+#define NO_LIGHT
 #define NO_MOTION
 #define MYDEBUG
 #define NO_BME
 #define NO_BMP
 
 #ifdef ESP8266
-  #define ARDUINO_ESP8266
-  #define MOTION
-  #define LIGTH
-  #define BME
-//  #undef LIGTH
+#define ARDUINO_ESP8266
+#define MOTION
+#define LIGHT
+#define BME
+//  #undef LIGHT
 //  #undef BME
 //  #define BMP
 #else
-  #define ARDUINO_MKR1000
-  #define LIGTH
-  #define BME
+#define ARDUINO_MKR1000
+#define LIGHT
+#define BME
 #endif
 /**
   TermClient constant header
@@ -105,17 +105,16 @@
 #define POST_REGISTER "/therm/rest/wifiRegister"
 
 // #define NO_MAINCONTROLLER
-// #define LIGTH
+// #define LIGHT
 // #define NO_MOTION
 
-#ifdef LIGTH
+#ifdef LIGHT
 #define FLAGLIGHT
 #endif
 
 #ifdef MOTION
 #define FLAGMOTION
 #endif
-
 
 #ifdef MAINCONTROLLER
 #define FLAGRELETEMP
