@@ -6,7 +6,7 @@
 #define NO_MAINCONTROLLER
 #define NO_LIGHT
 #define NO_MOTION
-#define MYDEBUG
+#define NO_MYDEBUG
 #define NO_BME
 #define NO_BMP
 
@@ -48,6 +48,7 @@
 #define TOPIC_WIFI "ThermApp/wifiRegister"
 #define TOPIC_MONITOR "ThermApp/monitorData"
 #define TOPIC_MOTION "ThermApp/motionSensor"
+#define TOPIC_ANNOUNCE "ThermApp/announce"
 #define TOPIC_LASTWILL "ThermApp/lastWill"
 #define TOPIC_GETPROG "ThermApp/getProgramming"
 #define TOPIC_UPDATEPROG "ThermApp/updateProgramming"
@@ -79,9 +80,15 @@
 //#define WAIT_CALL_CHECK       10000L
 #define WAIT_CALL_MONITOR 30000L
 //#define WAIT_CALL_MONITOR     6000L
+#define WAIT_CALL_MOTION 5000L
 #define WAIT_READ_TEMPERATURE 5000L
 #define WAIT_SETRELE_TEMPERATURE 6000L
+
+#ifdef MOTION
+#define WAIT_MAIN_LOOP 500L
+#else
 #define WAIT_MAIN_LOOP 2000L
+#endif
 
 #define REST_RET_OK 0
 #define REST_RET_WARN 4

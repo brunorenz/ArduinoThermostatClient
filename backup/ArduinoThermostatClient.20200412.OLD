@@ -93,15 +93,13 @@ long timeoutSetTemperatureRele;
 long timeoutCheckConfiguration;
 
 const int sensorPin = A0;
-#ifdef MOTION
 const int motionPin = D7;
-#endif
 const int relayPin = 9;
 
-#ifdef ARDUINO_MKR1000
-const int ledPIN = LED_BUILTIN;
+#ifdef ARDUINO_MKR1000  
+  const int ledPIN = LED_BUILTIN;
 #else
-const int ledPIN = LED_BUILTIN;
+  const int ledPIN = LED_BUILTIN;
 #endif
 
 //int count = 0;
@@ -118,11 +116,11 @@ uint8_t bell[8] = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
 
 //void (*resetFunc)(void) = 0; //declare reset function at address 0
 /*
-  uint8_t checkServerConnection(WiFiClient &client)
-  {
+uint8_t checkServerConnection(WiFiClient &client)
+{
   uint8_t connected = client.connected();
   return connected;
-  }
+}
 */
 /**
   Setup .. initialization
@@ -131,14 +129,14 @@ uint8_t bell[8] = {0x4, 0xe, 0xe, 0xe, 0x1f, 0x0, 0x4};
 void setup()
 {
   //Initialize serial and wait for port to open:
-  Serial.begin(115200);
+  Serial.begin(9600);
   // wait serial to start
   delay(2000);
 
   // init SETUP
   pinMode(ledPIN, OUTPUT);
   digitalWrite(ledPIN, LOW);
-
+  
   sensorDataLast.numItem = 0;
   // initialize I2C comunication
   Wire.begin();
@@ -160,9 +158,7 @@ void setup()
   logger.printlnLog("ThermostatClient start...");
   logger.printlnLog("LCD status    .. %s", LCD ? "OK" : "KO");
   logger.printlnLog("BMP280 status .. %s", BMP280 ? "OK" : "KO");
-#ifdef ESP8266 
-  logger.printlnLog("Default Led %d - ESP Led %d", LED_BUILTIN, D7);
-#endif  
+  logger.printlnLog("Default Led %d - ESP Led %d",LED_BUILTIN,D7);
   // initialize configuration
   initConfiguration(config, BMP280);
 
@@ -239,17 +235,10 @@ bool checkWIFIConnection()
   if (rc)
   {
     // get IP and MAC address
-
     if (strlen(config.macAddress) == 0)
       wifi.getMacAddress(config.macAddress, sizeof(config.macAddress));
     if (strlen(config.ipAddress) == 0)
       wifi.getLocalIp(config.ipAddress, sizeof(config.ipAddress));
-    // sometimes id cget "0"
-    if (strlen(config.macAddress) < 5)
-    {
-      logger.printlnLog("wrong data from WifiConnection .. disconnect ..");
-      wifi.disconnect();
-    }
   }
   return rc;
 }
@@ -284,8 +273,7 @@ bool checkMQConnection()
       logger.printlnLog("MQTT connection failed! Error code = %d", mqttClient.connectError());
 #endif
 
-    // no subscription
-    if (false) // rc
+    if (rc)
     {
       // subscribe topic
       int subscribeQos = 1;
@@ -293,7 +281,7 @@ bool checkMQConnection()
       const char topic1[] = TOPIC_UPDATEPROG;
       mqttClient.subscribe(topic1, subscribeQos);
 #endif
-#if defined FLAGRELETEMP
+#ifdef FLAGRELETEMP
       const char topic2[] = TOPIC_UPDATETEMP;
       mqttClient.subscribe(topic2, subscribeQos);
 #endif
@@ -320,7 +308,7 @@ void loopMQ()
     bool mqttConnectionAvailable = checkMQConnection();
     if (mqttConnectionAvailable)
     {
-      //logger.printlnLog("Connection WIFI and MQ ok!");
+      logger.printlnLog("Connection WIFI and MQ ok!");
       if (!config.registered)
       {
         sendWiFiRegisterMessage(config);
@@ -337,23 +325,8 @@ void loopMQ()
         timeoutReadTemperature = now;
         timeoutCallMonitor = now;
       }
-#ifdef MOTION
-      int signal = digitalRead(motionPin);
-      int led = signal == HIGH ? LOW : HIGH;
-      //logger.printlnLog("Motion sensor : %d : LED %d", signal, led);
-      bool checkSendMotionData = (now - timeoutCallMotion) > WAIT_CALL_MOTION;
-      digitalWrite(ledPIN, led);
-      if (checkSendMotionData || signal != motionStatus)
-      {
-        sendMotionData(config, sensorData, signal);
-        motionStatus = signal;
-        timeoutCallMotion = now;
-      }
-#endif
-    } else
-      logger.printlnLog("Connection MQ KO!");
-  } else
-    logger.printlnLog("Connection WIFI KO!");
+    }
+  }
 
   // read sensor data
   bool checkTemperature = (now - timeoutReadTemperature) > WAIT_READ_TEMPERATURE;
@@ -362,6 +335,20 @@ void loopMQ()
     readTemperature(false);
     timeoutReadTemperature = now;
   }
+
+#ifdef MOTION
+  int signal = digitalRead(motionPin);
+  int led = signal == HIGH ? LOW : HIGH;
+  logger.printlnLog("Motion sensor : %d : LED %d", signal,led);
+  bool checkSendMotionData = (now - timeoutCallMotion) > WAIT_CALL_MOTION;
+  digitalWrite(ledPIN, led);
+  if (checkSendMotionData || signal != motionStatus)
+  {    
+    sendMotionData(config, sensorData, signal);
+    motionStatus = signal;
+    timeoutCallMotion = now;
+  }
+#endif
 
 #ifdef FLAGRELETEMP
   bool checkReleTemperature = (now - timeoutSetTemperatureRele) > WAIT_SETRELE_TEMPERATURE;
@@ -395,7 +382,7 @@ void loopMQ()
 #endif
 
   delay(WAIT_MAIN_LOOP);
-  // Watchdog Timer
+// Watchdog Timer
 #ifdef ARDUINO_MKR1000
   Watchdog.reset();
 #endif
@@ -430,8 +417,8 @@ void sendWillMessage()
   willSent = true;
 }
 /*
-  void sendMonitorDataString(CONFIG &cfg, SENSORDATA &sensor)
-  {
+void sendMonitorDataString(CONFIG &cfg, SENSORDATA &sensor)
+{
   DynamicJsonDocument jsonBuffer(GET_JSON_BUFFER);
   bool send = messageParser.preparaMonitorDataRequest(cfg, sensor, jsonBuffer);
   if (send)
@@ -442,7 +429,7 @@ void sendWillMessage()
     char outTopic[] = TOPIC_MONITOR;
     publishMessage(jsonMessage, outTopic);
   }
-  }
+}
 */
 void sendMonitorDataMQTT(CONFIG &cfg, SENSORDATA &sensor)
 {
@@ -505,14 +492,13 @@ bool checkIfToSend(SENSORDATA &sensor, SENSORDATA &sensorOld)
 void sendMotionData(CONFIG &cfg, SENSORDATA &sensor, int on)
 {
   char jsonMessage[200];
-  float l = -1;
+  float l  = -1;
   if (sensor.numItem > 0)
-  {    
+  {
     l = sensor.totalLight / sensor.numItem;
   }
-  float cl = (float)analogRead(sensorPin) / 10.24;
-  sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"motion\": %d,\"light\": %f,\"mediumLight\": %f}",
-          cfg.macAddress, on, cl,l);
+  sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"motion\": %d,\"light\": %f}",
+          cfg.macAddress, on,l);
   char outTopic[] = TOPIC_MOTION;
   publishMessage(jsonMessage, outTopic);
 }
@@ -560,8 +546,8 @@ void sendWiFiRegisterMessage(CONFIG &cfg)
 }
 
 /**
-   Publish a generic message
-*/
+ * Publish a generic message
+ */
 void publishMessage(char *message, char *topic)
 {
   logger.printlnLog("Send message %s (%d) to Topic %s", message, strlen(message), topic);
@@ -571,7 +557,7 @@ void publishMessage(char *message, char *topic)
 #ifdef MQTT_1
   boolean rc = mqttClient.publish(topic, message, retained, qos);
   if (!rc)
-    logger.printlnLog("Publish failed !!");
+    logger.printlnLog("Publush failed !!");
 #endif
 #ifdef MQTT_0
   mqttClient.beginMessage(topic, strlen(message), retained, qos, dup);
@@ -580,6 +566,131 @@ void publishMessage(char *message, char *topic)
 #endif
 }
 
+/**
+  Recupera record di programmazione corrente in base a giorno / ora
+
+void getCurrentProgrammingRecord(PROG_TIME &progRecord, CONFIG &conf)
+{
+  // get current day and time
+  //time_t t = tm.getWiFiTime(); //hc.getTime() + ONE_HOUR;
+  time_t t = rtc.getEpoch();
+  struct tm *timeinfo;
+  timeinfo = localtime(&t);
+  logger.printlnLog("GET Programming NOW : day %d, hour %d , minute %d, dayl %d",
+                    timeinfo->tm_wday, timeinfo->tm_hour, timeinfo->tm_min,
+                    timeinfo->tm_isdst);
+  int tnow = timeinfo->tm_hour * 60 + timeinfo->tm_min;
+  int day = timeinfo->tm_wday - 1;
+  if (day < 0)
+    day = 6;
+  progRecord.minTemp = conf.minTemp;
+  progRecord.priorityDisp = 0;
+  for (int i = 0; i < conf.day[day].numProg; i++)
+  {
+    int ts = conf.day[day].prog[i].timeStart;
+    int te = conf.day[day].prog[i].timeEnd;
+    if (ts <= tnow && tnow <= te)
+    {
+      progRecord.minTemp = conf.day[day].prog[i].minTemp;
+      progRecord.priorityDisp = conf.day[day].prog[i].priorityDisp;
+      break;
+    }
+  }
+  logger.printlnLog("Day %d - Time %d -> Programming Temp %f - IdDispPry %d", day,
+                    tnow, progRecord.minTemp, progRecord.priorityDisp);
+}
+*/
+/**
+   Verifica temperatura ed in funzione di programmazione determina se accendere o meno
+*/
+/**
+bool checkThermostatStatus(float cT, CONFIG &conf, boolean connectionAvailable)
+{
+  bool on = false;
+  float tempToCheck = 0;
+  float managedTemp = 0;
+  switch (conf.serverStatus)
+  {
+  case STATUS_ON:
+    on = true;
+    break;
+  case STATUS_OFF:
+    on = false;
+    break;
+  case STATUS_MANUAL:
+    tempToCheck = conf.minTempManual;
+    break;
+  case STATUS_AUTO:
+    PROG_TIME progRecord;
+    // recupera record di programmazione temperatura
+    getCurrentProgrammingRecord(progRecord, conf);
+    tempToCheck = progRecord.minTemp;
+    // recupera temperatura
+    // if misura = media & numero dispositivi > 1
+    if (false)
+    {
+      managedTemp = getManagedTemperature(progRecord.priorityDisp, conf);
+      if (managedTemp > 0)
+        cT = managedTemp;
+    }
+    break;
+
+  default:
+    on = false;
+    break;
+  }
+  if (tempToCheck > 0)
+    on = cT < tempToCheck;
+  logger.printlnLog("Current Temp %f - Temp to Check %f - Status %d : ON = %d",
+                    cT, tempToCheck, conf.serverStatus, on);
+  return on;
+}
+**/
+/**
+   Retrive managed temperature according curent programming and status
+*/
+/**
+float getManagedTemperature(int pryDisp, CONFIG &conf)
+{
+  // se priorità dispositivo = Default uso dispositivo locale
+  if (pryDisp == 0)
+    pryDisp = conf.key;
+  float tempToCheck = 0.0;
+  TEMPDATA tdata;
+  //FIXME tm.getCurrentData(&tdata);
+  if (tdata.num > 0)
+  {
+    switch (tdata.tempMeasure)
+    {
+    case TEMP_AVARAGE:
+      for (int i = 0; i < tdata.num; i++)
+        tempToCheck += tdata.data[i].temperature;
+      tempToCheck = tempToCheck / (float)tdata.num;
+      break;
+    case TEMP_PRIORITY:
+      for (int i = 0; i < tdata.num; i++)
+        if (tdata.data[i].idDisp == pryDisp)
+        {
+          tempToCheck = tdata.data[i].temperature;
+          break;
+        }
+      break;
+    case TEMP_LOCAL:
+      for (int i = 0; i < tdata.num; i++)
+        if (tdata.data[i].idDisp == conf.key)
+        {
+          tempToCheck = tdata.data[i].temperature;
+          break;
+        }
+    default:
+      break;
+    }
+  }
+  else
+    tempToCheck = conf.minTemp;
+  return tempToCheck;
+}
+**/
 /**
    Read current sensor data
 */
@@ -616,8 +727,8 @@ void readTemperature(boolean init)
 
       if (true)
         logger.printlnLog(
-          "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
-          t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
+            "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
+            t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
     }
     displayStatus();
   }
@@ -633,11 +744,31 @@ bool checkI2CAddress(int address)
 }
 
 /**
+   Check if a configuration is available
+
+bool checkConfiguration(CONFIG *conf, bool connectionAvailable)
+{
+  if (conf->key == 0)
+  {
+    if (connectionAvailable)
+    {
+      logger.printlnLog("No configuration available.. call WiFiRegister");
+      tm.wiFiRegister(conf);
+    }
+    else
+    {
+      logger.printlnLog("No configuration available and No Connection available !!");
+    }
+  }
+  return conf->key != 0;
+}
+*/
+/**
    Manage LCD output
 */
 void displayStatus()
 {
-#ifdef ARDUINO_MKR1000_XX
+#ifdef ARDUINO_MKR1000
   // Get Time
   //time_t t = tm.getWiFiTime(); //hc.getTime() + ONE_HOUR;
   time_t t = rtc.getEpoch();
@@ -711,17 +842,17 @@ void onMqttMessage(int messageSize)
 #ifdef MQTT_0
   // we received a message, print out the topic and contents
   /*
-    Serial.print("Received a message with topic '");
-    Serial.print(mqttClient.messageTopic());
-    Serial.print("', duplicate = ");
-    Serial.print(mqttClient.messageDup() ? "true" : "false");
-    Serial.print(", QoS = ");
-    Serial.print(mqttClient.messageQoS());
-    Serial.print(", retained = ");
-    Serial.print(mqttClient.messageRetain() ? "true" : "false");
-    Serial.print("', length ");
-    Serial.print(messageSize);
-    Serial.println(" bytes:");
+  Serial.print("Received a message with topic '");
+  Serial.print(mqttClient.messageTopic());
+  Serial.print("', duplicate = ");
+  Serial.print(mqttClient.messageDup() ? "true" : "false");
+  Serial.print(", QoS = ");
+  Serial.print(mqttClient.messageQoS());
+  Serial.print(", retained = ");
+  Serial.print(mqttClient.messageRetain() ? "true" : "false");
+  Serial.print("', length ");
+  Serial.print(messageSize);
+  Serial.println(" bytes:");
   */
   char messageTopic[100];
   //memcpy(p, payload, length);
@@ -736,12 +867,12 @@ void onMqttMessage(int messageSize)
     messageParser.updateConfigurationResponse(config, message);
     wifi.updateRTC(rtc, config.timeZoneOffset);
     /*
-      unsigned long now = wifi.getTime();
-      if (now > 0)
-      {
+    unsigned long now = wifi.getTime();
+    if (now > 0)
+    {
       now -= config.timeZoneOffset * 60;
       rtc.setEpoch(now);
-      }*/
+    }*/
   }
   else if (strcmp(messageTopic, TOPIC_UPDATETEMP) == 0)
   {
@@ -757,8 +888,8 @@ void onMqttMessage(int messageSize)
 #endif
 }
 /**
-   Initialize configuration data
-*/
+ * Initialize configuration data
+ */
 void initConfiguration(CONFIG &cfg, bool bme)
 {
   // initialize configuration data
@@ -813,7 +944,7 @@ void initConfiguration(CONFIG &cfg, bool bme)
   }
 }
 /**
-   initialize LCD
+ * initialize LCD
  **/
 
 bool checkLCD()
@@ -835,7 +966,7 @@ bool checkLCD()
 }
 
 /**
-   initialize BME sensor
+ * initialize BME sensor
  **/
 bool checkBME()
 {
