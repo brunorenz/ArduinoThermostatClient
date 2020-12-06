@@ -160,9 +160,9 @@ void setup()
   logger.printlnLog("ThermostatClient start...");
   logger.printlnLog("LCD status    .. %s", LCD ? "OK" : "KO");
   logger.printlnLog("BMP280 status .. %s", BMP280 ? "OK" : "KO");
-#ifdef ESP8266 
+#ifdef ESP8266
   logger.printlnLog("Default Led %d - ESP Led %d", LED_BUILTIN, D7);
-#endif  
+#endif
   // initialize configuration
   initConfiguration(config, BMP280);
 
@@ -350,9 +350,11 @@ void loopMQ()
         timeoutCallMotion = now;
       }
 #endif
-    } else
+    }
+    else
       logger.printlnLog("Connection MQ KO!");
-  } else
+  }
+  else
     logger.printlnLog("Connection WIFI KO!");
 
   // read sensor data
@@ -507,12 +509,12 @@ void sendMotionData(CONFIG &cfg, SENSORDATA &sensor, int on)
   char jsonMessage[200];
   float l = -1;
   if (sensor.numItem > 0)
-  {    
+  {
     l = sensor.totalLight / sensor.numItem;
   }
   float cl = (float)analogRead(sensorPin) / 10.24;
   sprintf(jsonMessage, "{\"macAddress\":\"%s\",\"motion\": %d,\"light\": %f,\"mediumLight\": %f}",
-          cfg.macAddress, on, cl,l);
+          cfg.macAddress, on, cl, l);
   char outTopic[] = TOPIC_MOTION;
   publishMessage(jsonMessage, outTopic);
 }
@@ -616,8 +618,8 @@ void readTemperature(boolean init)
 
       if (true)
         logger.printlnLog(
-          "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
-          t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
+            "Read Temperature %f - Pressure %f - Light %f - Humidity %f - Medium Temperature %f(%d)",
+            t, p, l, u, sensorData.currentTemperature, sensorData.numItem);
     }
     displayStatus();
   }
